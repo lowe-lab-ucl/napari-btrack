@@ -46,10 +46,17 @@ def track() -> FunctionGui:
         config_file_path: Optional[Path],
         reset_button,
     ):
-        segmented_objects = segmentation_to_objects(segmentation.data[:100, ...])
-        data, properties, graph = run_tracker(segmented_objects, config_file_path)
+        segmented_objects = segmentation_to_objects(
+            segmentation.data[:100, ...]
+        )
+        data, properties, graph = run_tracker(
+            segmented_objects, config_file_path
+        )
         viewer.add_tracks(
-            data=data, properties=properties, graph=graph, name=f"{segmentation}_btrack"
+            data=data,
+            properties=properties,
+            graph=graph,
+            name=f"{segmentation}_btrack",
         )
 
     return widget
