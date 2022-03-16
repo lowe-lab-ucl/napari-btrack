@@ -1,0 +1,36 @@
+name: checks
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout source
+        uses: actions/checkout@v2
+
+      - name: set up python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: set PY environment variable
+        run: echo "PY=$(python -VV | sha256sum | cut -d' ' -f1)" >> $GITHUB_ENV
+
+      - name: cache pre-commits dependencies
+        uses: actions/cache@v2
+        with:
+          path: |
+            ${{ env.pythonLocation }}
+            ~/.cache/pre-commit
+          key: |
+            pre-commit-${{ env.PY }}-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      - name: install dependencies
+        run: pip install pre-commit
+
+      - name: Install pre-commit hooks
+        run: pre-commit install
+
+      - name: run pre-commit
+        run: pre-commit run --all-files --color always
