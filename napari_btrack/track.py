@@ -40,13 +40,13 @@ def track() -> FunctionGui:
             value=0,
             label="tracking first layer",
             min=0,
-            max=10000,
+            max=10_000,
         ),
         tracking_upper_limit=dict(
             value=-1,
             label="tracking last layer",
             min=-100,
-            max=10000,
+            max=10_000,
         ),
         reset_button=dict(widget_type="PushButton", text="Reset defaults"),
     )
