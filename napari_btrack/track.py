@@ -354,7 +354,7 @@ def _update_widgets_from_config(container: Container, config: TrackerConfig) -> 
                 if parameter in Matrices().names:
                     sigma = Matrices.get_sigma(parameter, value)
                     getattr(container, f"{parameter}_sigma").value = sigma
-                if parameter == "hypotheses":
+                elif parameter == "hypotheses":
                     for hypothesis in ALL_HYPOTHESES:
                         getattr(container, hypothesis).value = hypothesis in value
                 else:
