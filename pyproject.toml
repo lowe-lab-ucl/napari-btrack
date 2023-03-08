@@ -28,6 +28,7 @@ dependencies = [
     "napari-plugin-engine>=0.1.4",
     "napari>=0.4.0",
     "numpy",
+    "qtpy",
 ]
 description = "A plugin to use btrack from napari"
 dynamic = [
@@ -39,6 +40,18 @@ requires-python = ">=3.8"
 entry-points."napari.manifest".napari-btrack = "napari_btrack:napari.yaml"
 license.file = "LICENSE"
 urls.homepage = "https://github.com/quantumjot/napari-btrack"
+
+[project.optional-dependencies]
+pyside = [
+    "PySide2 >= 5.13.2, != 5.15.0 ; python_version != '3.8'",
+    "PySide2 >= 5.14.2, != 5.15.0 ; python_version == '3.8'",
+]
+pyqt = [
+    "PyQt5 >= 5.12.3, != 5.15.0",
+]
+qt = [
+    "napari-btrack[pyside]",
+]
 
 [tool.coverage]
 report = {skip_covered = true, sort = "cover"}
