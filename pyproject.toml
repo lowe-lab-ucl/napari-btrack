@@ -44,8 +44,8 @@ urls.homepage = "https://github.com/quantumjot/napari-btrack"
 report = {skip_covered = true, sort = "cover"}
 run = {branch = true, parallel = true, source = ["napari_btrack"]}
 paths.source = [
-    ".tox*/*/lib/python*/site-packages",
     "napari_btrack",
+    ".tox*/*/lib/python*/site-packages",
 ]
 
 [tool.mypy]
@@ -93,7 +93,10 @@ select = [
     "W",
     "YTT",
 ]
-isort.known-first-party = ["btrack"]
+isort.known-first-party = [
+    "btrack",
+    "napari_btrack",
+]
 mccabe.max-complexity = 18
 
 [tool.setuptools_scm]
