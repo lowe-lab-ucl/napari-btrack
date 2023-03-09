@@ -93,10 +93,7 @@ select = [
     "W",
     "YTT",
 ]
-isort.known-first-party = [
-    "btrack",
-    "napari_btrack",
-]
+isort.known-first-party = ["napari_btrack"]
 mccabe.max-complexity = 18
 
 [tool.setuptools_scm]
