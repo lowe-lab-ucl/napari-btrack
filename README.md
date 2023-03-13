@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 ![tests](https://github.com/lowe-lab-ucl/napari-btrack/workflows/tests/badge.svg)
-[![codecov](https://codecov.io/gh/lowe-lab-ucl/napari-btrack/branch/master/graph/badge.svg)](https://codecov.io/gh/lowe-lab-ucl/napari-btrack)
+[![codecov](https://codecov.io/gh/lowe-lab-ucl/napari-btrack/branch/main/graph/badge.svg)](https://codecov.io/gh/lowe-lab-ucl/napari-btrack)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 
 A plugin to use btrack from napari
