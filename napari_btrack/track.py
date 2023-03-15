@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import copy
 import logging
+import os
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -36,6 +38,97 @@ HIDDEN_VARIABLE_NAMES = [
     "eta",
 ]
 ALL_HYPOTHESES = ["P_FP", "P_init", "P_term", "P_link", "P_branch", "P_dead"]
+
+
+@dataclass
+class Sigmas:
+    """Values to scale unscaled TrackerConfig matrices by"""
+
+    A: float
+    H: float
+    P: float
+    G: float
+    R: float
+
+
+@dataclass
+class UnscaledTackerConfig:
+    """A helper dataclass to convert TrackerConfig matrices from scaled to unscaled.
+
+    This is needed because TrackerConfig stores "scaled" matrices, i.e. it
+    doesn't store sigma and the "unscaled" MotionModel matrices separately.
+    """
+
+    filename: os.PathLike
+    unscaled_config: TrackerConfig = field(init=False)
+    sigmas: Sigmas = field(init=False)
+
+    def __post_init__(self):
+        """Create the TrackerConfig and un-scale the MotionModel indices"""
+
+        config = load_config(self.filename)
+        self.unscaled_config, self.sigmas = self._unscale_config(config)
+
+    def _unscale_config(self, config: TrackerConfig) -> tuple[TrackerConfig, Sigmas]:
+        """Convert the matrices of a scaled TrackerConfig MotionModel to unscaled."""
+
+        A_sigma = np.max(config.motion_model.A)
+        config.motion_model.A /= A_sigma
+
+        H_sigma = np.max(config.motion_model.H)
+        config.motion_model.H /= H_sigma
+
+        P_sigma = np.max(config.motion_model.P)
+        config.motion_model.P /= P_sigma
+
+        R_sigma = np.max(config.motion_model.R)
+        config.motion_model.R /= R_sigma
+
+        # Use only G, not Q
+        # If we use both G and Q, then Q_sigma must be updated when G_sigma is,
+        # and vice-versa
+        # Instead, use G if it exists. If not, determine G from Q, which we can
+        # do because Q is symmetric
+        if config.motion_model.G is not None:
+            G_sigma = np.max(config.motion_model.G)
+            config.motion_model.G /= G_sigma
+        elif config.motion_model.Q is not None:
+            Q_sigma = np.max(config.motion_model.Q)
+            G_sigma = Q_sigma**0.5
+            config.motion_model.Q /= Q_sigma
+            config.motion_model.G = config.motion_model.Q[0] / np.max(
+                config.motion_model.Q[0]
+            )
+        else:
+            _msg = "Either a `G` or `Q` matrix is required for the MotionModel."
+            raise ValueError(_msg)
+
+        sigmas = Sigmas(
+            A=A_sigma,
+            H=H_sigma,
+            P=P_sigma,
+            G=G_sigma,
+            R=R_sigma,
+        )
+
+        return config, sigmas
+
+    def scale_config(self):
+        """Create a new TrackerConfig with scaled MotionModel matrices"""
+
+        # Create a copy so that config values stay in sync with widget values
+        scaled_config = copy.deepcopy(self.unscaled_config)
+
+        scaled_config.motion_model.A *= self.sigmas.A
+        scaled_config.motion_model.H *= self.sigmas.H
+        scaled_config.motion_model.P *= self.sigmas.P
+        scaled_config.motion_model.R *= self.sigmas.R
+        scaled_config.motion_model.G *= self.sigmas.G
+        scaled_config.motion_model.Q = (
+            scaled_config.motion_model.G.T @ scaled_config.motion_model.G
+        )
+
+        return scaled_config
 
 
 @dataclass
