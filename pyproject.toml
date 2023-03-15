@@ -76,6 +76,7 @@ fix = true
 force-exclude = true
 ignore = [
     "B905", # python>=3.10
+    "N806",
 ]
 select = [
     "A",
