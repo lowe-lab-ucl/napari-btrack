@@ -304,32 +304,30 @@ def _create_per_model_widgets(model: BaseModel) -> list[Widget]:
     otherwise we can use the napari default.
     """
     widgets: list[Widget] = []
-    widgets.append(create_widget(**html_label_widget(type(model).__name__)))
+    widget = create_widget(**html_label_widget(type(model).__name__))
+    widgets.append(widget)
+    print(type(model), widget)
     for parameter, default_value in model:
         if parameter in HIDDEN_VARIABLE_NAMES:
+            print(f'{parameter} skipped')
             continue
         if parameter in Matrices().names:
             # only expose the scalar sigma to user
             sigma = Matrices.get_sigma(parameter, default_value)
-            widgets.append(
-                create_widget(value=sigma, name=f"{parameter}_sigma", annotation=float)
-            )
+            widget = create_widget(value=sigma, name=f"{parameter}_sigma", annotation=float)
+            widgets.append(widget)
+            print(type(model), widget)
         elif parameter == "hypotheses":
             # the hypothesis list should be represented as a series of checkboxes
-            widgets.extend(
-                [
-                    create_widget(
-                        value=(choice in default_value), name=choice, annotation=bool
-                    )
-                    for choice in ALL_HYPOTHESES
-                ]
-            )
+            for choice in ALL_HYPOTHESES:
+                widget = create_widget(value=(choice in default_value), name=choice, annotation=bool)
+                widgets.append(widget)
+                print(type(model), widget)
         else:  # use napari default
-            widgets.append(
-                create_widget(
-                    value=default_value, name=parameter, annotation=type(default_value)
-                )
-            )
+            widget = create_widget(value=default_value, name=parameter, annotation=type(default_value))
+            widgets.append(widget)
+            print(type(model), widget)
+
     return widgets
 
 
@@ -337,7 +335,9 @@ def _create_napari_specific_widgets(widgets: list[Widget]) -> None:
     """
     Add the widgets which interact with napari itself
     """
-    widgets.append(create_widget(**html_label_widget("Segmentation")))
+    widget = create_widget(**html_label_widget("Segmentation"))
+    widgets.append(widget)
+    print(widget)
     segmentation_widget = create_widget(
         name="segmentation",
         annotation=napari.layers.Labels,
@@ -349,6 +349,7 @@ def _create_napari_specific_widgets(widgets: list[Widget]) -> None:
         },
     )
     widgets.append(segmentation_widget)
+    print(segmentation_widget)
 
 
 def _create_pydantic_default_widgets(
@@ -357,9 +358,9 @@ def _create_pydantic_default_widgets(
     """
     Create the widgets which have a tracker config equivalent.
     """
-    widgets.append(
-        create_widget(name="max_search_radius", value=config.max_search_radius)
-    )
+    widget = create_widget(name="max_search_radius", value=config.max_search_radius)
+    widgets.append(widget)
+    print(widget)
     model_configs = [config.motion_model, config.hypothesis_model]
     model_widgets = [_create_per_model_widgets(model) for model in model_configs]
     widgets.extend([item for sublist in model_widgets for item in sublist])
@@ -367,12 +368,12 @@ def _create_pydantic_default_widgets(
 
 def _create_cell_or_particle_widget(widgets: list[Widget]) -> None:
     """Create a dropdown menu to choose between cell or particle mode."""
-    widgets.append(create_widget(**html_label_widget("Mode")))
-    widgets.append(
-        create_widget(
-            name="mode", value="cell", options={"choices": ["cell", "particle"]}
-        )
-    )
+    widget = create_widget(**html_label_widget("Mode"))
+    widgets.append(widget)
+    print('mode', widget)
+    widget = create_widget(name="mode", value="cell", options={"choices": ["cell", "particle"]})
+    widgets.append(widget)
+    print(widget)
 
 
 def _widgets_to_tracker_config(container: Container) -> TrackerConfig:
@@ -474,16 +475,13 @@ def _create_button_widgets(widgets: list[Widget]) -> None:
         "Reset defaults",
         "Run",
     ]
-    widgets.append(create_widget(**html_label_widget("Control buttons")))
-    widgets.extend(
-        [
-            create_widget(name=widget_name, label=widget_label, widget_type=PushButton)
-            for widget_name, widget_label in zip(
-                widget_names,
-                widget_labels,
-            )
-        ]
-    )
+    widget = create_widget(**html_label_widget("Control buttons"))
+    widgets.append(widget)
+    print(widget)
+    for widget_name, widget_label in zip(widget_names, widget_labels):
+        widget = create_widget(name=widget_name, label=widget_label, widget_type=PushButton)
+        print('Control buttons', widget)
+        widgets.append(widget)
 
 
 def track() -> Container:
