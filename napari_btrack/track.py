@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import copy
-import logging
 import os
 from dataclasses import dataclass, field
 
@@ -107,36 +106,49 @@ class UnscaledTackerConfig:
 @dataclass
 class TrackerConfigs:
     configs: dict[str, UnscaledTackerConfig] = field(default_factory=dict)
+    current_config: str = field(init=False)
 
     def __post_init__(self):
         """Add the default cell and particle configs."""
 
-        self.add_config(
+        _ = self.add_config(
             filename=datasets.cell_config(),
             name="cell",
+            overwrite=False,
         )
-        self.add_config(
+        _ = self.add_config(
             filename=datasets.particle_config(),
             name="particle",
+            overwrite=False,
         )
+
+        self.current_config = "cell"
 
     def __getitem__(self, config_name):
         return self.configs[config_name]
 
-    def add_config(self, filename, name=None):
-        """Load a TrackerConfig and add it to the store"""
+    def add_config(
+        self,
+        filename,
+        overwrite,
+        name=None,
+    ) -> str:
+        """Load a TrackerConfig and add it to the store."""
 
         config = UnscaledTackerConfig(filename)
         config_name = name if name is not None else config.tracker_config.name
+        config.tracker_config.name = config_name
 
         # TODO: Make the combobox editable so config names can be changed within the GUI
-        if config_name in self.configs:
+        if config_name in self.configs and not overwrite:
             _msg = (
                 f"Config '{config_name}' already exists - config names must be unique."
             )
             raise ValueError(_msg)
 
         self.configs[config_name] = config
+
+        return config_name
 
 
 def run_tracker(
@@ -201,32 +213,6 @@ def html_label_widget(label: str, tag: str = "b") -> dict:
         "widget_type": "Label",
         "label": f"<{tag}>{label}</{tag}>",
     }
-
-
-def _update_widgets_from_config(container: Container, config: TrackerConfig) -> None:
-    """Helper function to update a container's widgets
-    with the values in a given tracker config.
-    """
-    container.max_search_radius.value = config.max_search_radius
-    for model in ["motion_model", "hypothesis_model", "object_model"]:
-        if model_config := getattr(config, model):
-            for parameter, value in model_config:
-                if parameter in HIDDEN_VARIABLE_NAMES:
-                    continue
-                if parameter in Matrices().names:
-                    sigma = Matrices.get_sigma(parameter, value)
-                    getattr(container, f"{parameter}_sigma").value = sigma
-                elif parameter == "hypotheses":
-                    for hypothesis in ALL_HYPOTHESES:
-                        getattr(container, hypothesis).value = hypothesis in value
-                else:
-                    getattr(container, parameter).value = value
-    # we can determine whether we are in particle or cell mode
-    # by checking whether the 4th entry of the first row of the
-    # A matrix is 1 or 0 (1 for cell mode)
-    mode_is_cell = config.motion_model.A[0, 3] == 1
-    logging.info(f"mode is cell: {mode_is_cell}")
-    container.config_selector.value = "cell" if mode_is_cell else "particle"
 
 
 def _create_input_widgets():
@@ -422,6 +408,10 @@ def _create_hypothesis_model_hypotheses_widgets():
     # P_FP is always required
     P_FP_hypothesis = hypotheses_widgets[0]
     P_FP_hypothesis.enabled = False
+
+    # P_merge should be disabled by default
+    P_merge_hypothesis = hypotheses_widgets[-1]
+    P_merge_hypothesis.value = False
 
     return hypotheses_widgets
 
@@ -637,14 +627,11 @@ def _create_control_widgets():
     return control_buttons
 
 
-def create_config_from_widgets(
+def update_config_from_widgets(
     unscaled_config: UnscaledTackerConfig,
     container: Container,
 ):
-    """
-    Update an UnscaledTrackerConfig with the current widget values and
-    then create a new, scaled, TrackerConfig.
-    """
+    """Update an UnscaledTrackerConfig with the current widget values."""
 
     sigmas = unscaled_config.sigmas
     sigmas.P = container.P_sigma.value
@@ -670,6 +657,7 @@ def create_config_from_widgets(
         "P_link",
         "P_branch",
         "P_dead",
+        "P_merge",
     ]:
         if container[hypothesis].value:
             hypotheses.append(hypothesis)
@@ -688,13 +676,57 @@ def create_config_from_widgets(
 
     hypothesis_model.segmentation_miss_rate = container.segmentation_miss_rate.value
 
-    # now we can create an unscaled TrackerConfig from the updated values
-    scaled_config = unscaled_config.scale_config()
 
-    return scaled_config
+def update_widgets_from_config(
+    unscaled_config: UnscaledTackerConfig,
+    container: Container,
+):
+    """
+    Update the widgets in a container with the values in an
+    UnscaledTrackerConfig.
+    """
+
+    sigmas = unscaled_config.sigmas
+    container.P_sigma.value = sigmas.P
+    container.G_sigma.value = sigmas.G
+    container.R_sigma.value = sigmas.R
+
+    config = unscaled_config.tracker_config
+    container.update_method_selector.value = config.update_method.name
+    container.max_search_radius.value = config.max_search_radius
+
+    motion_model = config.motion_model
+    container.accuracy.value = motion_model.accuracy
+    container.max_lost.value = motion_model.max_lost
+
+    hypothesis_model = config.hypothesis_model
+    for hypothesis in [
+        "P_FP",
+        "P_init",
+        "P_term",
+        "P_link",
+        "P_branch",
+        "P_dead",
+        "P_merge",
+    ]:
+        is_checked = hypothesis in hypothesis_model.hypotheses
+        container[hypothesis].value = is_checked
+
+    container.lambda_time.value = hypothesis_model.lambda_time
+    container.lambda_dist.value = hypothesis_model.lambda_dist
+    container.lambda_link.value = hypothesis_model.lambda_link
+    container.lambda_branch.value = hypothesis_model.lambda_branch
+
+    container.theta_dist.value = hypothesis_model.theta_dist
+    container.theta_time.value = hypothesis_model.theta_time
+    container.dist_thresh.value = hypothesis_model.dist_thresh
+    container.time_thresh.value = hypothesis_model.time_thresh
+    container.apop_thresh.value = hypothesis_model.apop_thresh
+
+    container.segmentation_miss_rate.value = hypothesis_model.segmentation_miss_rate
 
 
-def track() -> Container:
+def track() -> Container:  # noqa: PLR0915
     """Create widgets for the btrack plugin."""
 
     # TrackerConfigs automatically loads default cell and particle configs
@@ -723,21 +755,43 @@ def track() -> Container:
 
     btrack_widget = Container(widgets=widgets, scrollable=True)
     btrack_widget.viewer = napari.current_viewer()
+    btrack_widget.unscaled_configs = all_configs
 
-    @btrack_widget.reset_button.changed.connect
-    def restore_defaults() -> None:
-        _update_widgets_from_config(btrack_widget, default_cell_config)
+    @btrack_widget.config_selector.changed.connect
+    def select_config() -> None:
+        """Set widget values from a newly-selected base config"""
+
+        # first update the previous config with the current widget values
+        previous_config_name = all_configs.current_config
+        update_config_from_widgets(
+            unscaled_config=all_configs[previous_config_name],
+            container=btrack_widget,
+        )
+        # now load the newly-selected config and set widget values
+        new_config_name = btrack_widget.config_selector.value
+        all_configs.current_config = new_config_name
+        update_widgets_from_config(
+            unscaled_config=all_configs[new_config_name],
+            container=btrack_widget,
+        )
 
     @btrack_widget.call_button.changed.connect
     def run() -> None:
-        """Update the TrackerConfig from widget values and run tracking"""
+        """
+        Update the TrackerConfig from widget values, run tracking,
+        and add tracks to the viewer.
+        """
+
         unscaled_config = all_configs[btrack_widget.config_selector.current_choice]
-        config = create_config_from_widgets(
+        update_config_from_widgets(
             unscaled_config=unscaled_config,
             container=btrack_widget,
         )
+
+        config = unscaled_config.scale_config()
         segmentation = btrack_widget.segmentation_selector.value
         data, properties, graph = run_tracker(segmentation, config)
+
         btrack_widget.viewer.add_tracks(
             data=data,
             properties=properties,
@@ -745,31 +799,53 @@ def track() -> Container:
             name=f"{segmentation}_btrack",
         )
 
-    @btrack_widget.config_selector.changed.connect
-    def select_config() -> None:
-        pass
-        # TODO: add function to update widgets from current UnscaledTackerConfig
-        # update_widgets_from_config(config=all_configs[new_config_name])
+    @btrack_widget.reset_button.changed.connect
+    def restore_defaults() -> None:
+        """ "Reload the config file and set widgets to default values."""
+
+        config_name = all_configs.current_config
+        filename = all_configs[config_name].filename
+        all_configs.add_config(
+            filename=filename,
+            overwrite=True,
+        )
+
+        update_widgets_from_config(
+            unscaled_config=all_configs[config_name],
+            container=btrack_widget,
+        )
 
     @btrack_widget.save_config_button.changed.connect
     def save_config_to_json() -> None:
+        """Save widget values to file"""
+
         save_path = get_save_path()
         if save_path is None:
             # user has cancelled
             return
+
         unscaled_config = all_configs[btrack_widget.config_selector.current_choice]
-        config = create_config_from_widgets(
+        update_config_from_widgets(
             unscaled_config=unscaled_config,
             container=btrack_widget,
         )
+        config = unscaled_config.scale_config()
+
         save_config(save_path, config)
 
     @btrack_widget.load_config_button.changed.connect
     def load_config_from_json() -> None:
+        """Load a config from file and set it as the selected base config"""
+
         load_path = get_load_path()
-        if load_path:  # load path is None if user cancels
-            config = load_config(load_path)
-            _update_widgets_from_config(btrack_widget, config)
+        if load_path is None:
+            # user has cancelled
+            return
+
+        config_name = all_configs.add_config(filename=load_path, overwrite=False)
+        btrack_widget.config_selector.options["choices"].append(config_name)
+        btrack_widget.config_selector.reset_choices()
+        btrack_widget.config_selector.value = config_name
 
     scroll = QScrollArea()
     scroll.setWidget(btrack_widget._widget._qwidget)
