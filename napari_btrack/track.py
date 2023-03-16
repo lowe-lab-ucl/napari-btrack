@@ -22,7 +22,6 @@ from btrack.utils import segmentation_to_objects
 from magicgui.application import use_app
 from magicgui.types import FileDialogMode
 from magicgui.widgets import Container, PushButton, Widget, create_widget
-from pydantic import BaseModel
 from qtpy.QtWidgets import QScrollArea
 
 default_cell_config = load_config(datasets.cell_config())
@@ -309,60 +308,6 @@ def html_label_widget(label: str, tag: str = "b") -> dict:
     }
 
 
-def _create_per_model_widgets(model: BaseModel) -> list[Widget]:
-    """
-    For a given model create the required list of widgets.
-    The items "hypotheses" and the various matrices need customisation,
-    otherwise we can use the napari default.
-    """
-    widgets: list[Widget] = []
-    widget = create_widget(**html_label_widget(type(model).__name__))
-    widgets.append(widget)
-    print(type(model), widget)
-    for parameter, default_value in model:
-        if parameter in HIDDEN_VARIABLE_NAMES:
-            print(f"{parameter} skipped")
-            continue
-        if parameter in Matrices().names:
-            # only expose the scalar sigma to user
-            sigma = Matrices.get_sigma(parameter, default_value)
-            widget = create_widget(
-                value=sigma, name=f"{parameter}_sigma", annotation=float
-            )
-            widgets.append(widget)
-            print(type(model), widget)
-        elif parameter == "hypotheses":
-            # the hypothesis list should be represented as a series of checkboxes
-            for choice in ALL_HYPOTHESES:
-                widget = create_widget(
-                    value=(choice in default_value), name=choice, annotation=bool
-                )
-                widgets.append(widget)
-                print(type(model), widget)
-        else:  # use napari default
-            widget = create_widget(
-                value=default_value, name=parameter, annotation=type(default_value)
-            )
-            widgets.append(widget)
-            print(type(model), widget)
-
-    return widgets
-
-
-def _create_pydantic_default_widgets(
-    widgets: list[Widget], config: TrackerConfig
-) -> None:
-    """
-    Create the widgets which have a tracker config equivalent.
-    """
-    widget = create_widget(name="max_search_radius", value=config.max_search_radius)
-    widgets.append(widget)
-    print(widget)
-    model_configs = [config.motion_model, config.hypothesis_model]
-    model_widgets = [_create_per_model_widgets(model) for model in model_configs]
-    widgets.extend([item for sublist in model_widgets for item in sublist])
-
-
 def _widgets_to_tracker_config(container: Container) -> TrackerConfig:
     """Helper function to convert from the widgets to a tracker configuration."""
     motion_model_dict: dict[str, Any] = {}
@@ -505,7 +450,7 @@ def _create_input_widgets():
     return input_widgets
 
 
-def _create_update_method_widgets(tracker_config: TrackerConfig):
+def _create_update_method_widgets(tracker_config: UnscaledTackerConfig):
     """Create widgets for selecting the update method"""
 
     tooltip = (
@@ -531,7 +476,7 @@ def _create_update_method_widgets(tracker_config: TrackerConfig):
         "method is 'APPROXIMATE'"
     )
     max_search_radius = create_widget(
-        value=tracker_config.max_search_radius,
+        value=tracker_config.unscaled_config.max_search_radius,
         name="max_search_radius",
         label="search radius",
         widget_type="SpinBox",
@@ -543,6 +488,305 @@ def _create_update_method_widgets(tracker_config: TrackerConfig):
     return update_method_widgets
 
 
+def _make_label_bold(label: str) -> str:
+    """Generate html for a bold label"""
+
+    bold_label = f"<b>{label}</b>"
+    return bold_label
+
+
+def _create_motion_model_sigma_widgets(sigmas: Sigmas):
+    """Create widgest for setting the magnitudes of the MotionModel matrices"""
+
+    tooltip = "Magnitude of error in initial estimates.\n Used to scale the matrix P."
+    P_sigma = create_widget(
+        value=sigmas.P,
+        name="P_sigma",
+        label=f"max({_make_label_bold('P')})",
+        widget_type="FloatSpinBox",
+        options={"tooltip": tooltip},
+    )
+
+    tooltip = "Magnitude of error in process.\n Used to scale the matrix G."
+    G_sigma = create_widget(
+        value=sigmas.G,
+        name="G_sigma",
+        label=f"max({_make_label_bold('G')})",
+        widget_type="FloatSpinBox",
+        options={"tooltip": tooltip},
+    )
+
+    tooltip = "Magnitude of error in measurements.\n Used to scale the matrix R."
+    R_sigma = create_widget(
+        value=sigmas.R,
+        name="G_sigma",
+        label=f"max({_make_label_bold('R')})",
+        widget_type="FloatSpinBox",
+        options={"tooltip": tooltip},
+    )
+
+    sigma_widgets = [
+        P_sigma,
+        G_sigma,
+        R_sigma,
+    ]
+
+    return sigma_widgets
+
+
+def _create_motion_model_widgets(tracker_config: UnscaledTackerConfig):
+    """Create widgets for setting parameters of the MotionModel"""
+
+    motion_model_label = create_widget(
+        label=_make_label_bold("Motion model"),
+        widget_type="Label",
+        gui_only=True,
+    )
+
+    sigma_widgets = _create_motion_model_sigma_widgets(
+        sigmas=tracker_config.sigmas,
+    )
+
+    tooltip = "Integration limits for calculating probabilities"
+    accuracy = create_widget(
+        value=tracker_config.unscaled_config.motion_model.accuracy,
+        name="accuracy",
+        label="accuracy",
+        widget_type="FloatSpinBox",
+        options={"tooltip": tooltip},
+    )
+
+    tooltip = "Number of frames without observation before marking as lost"
+    max_lost_frames = create_widget(
+        value=tracker_config.unscaled_config.motion_model.max_lost,
+        name="max_lost",
+        label="max lost",
+        widget_type="FloatSpinBox",
+        options={"tooltip": tooltip},
+    )
+
+    motion_model_widgets = [
+        motion_model_label,
+        *sigma_widgets,
+        accuracy,
+        max_lost_frames,
+    ]
+
+    return motion_model_widgets
+
+
+def _create_hypothesis_model_hypotheses_widgets():
+    """Create widgets for selecting which hypotheses to generate."""
+
+    hypotheses = [
+        "P_FP",
+        "P_init",
+        "P_term",
+        "P_link",
+        "P_branch",
+        "P_dead",
+        "P_merge",
+    ]
+    tooltips = [
+        "Hypothesis that a tracklet is a false positive detection. Always required.",
+        "Hypothesis that a tracklet starts at the beginning of the movie or edge of the FOV.",  # noqa: E501
+        "Hypothesis that a tracklet ends at the end of the movie or edge of the FOV.",
+        "Hypothesis that two tracklets should be linked together.",
+        "Hypothesis that a tracklet can split onto two daughter tracklets.",
+        "Hypothesis that a tracklet terminates without leaving the FOV.",
+        "Hypothesis that two tracklets merge into one tracklet.",
+    ]
+
+    hypotheses_widgets = []
+    for hypothesis, tooltip in zip(hypotheses, tooltips):
+        widget = create_widget(
+            value=True,
+            name=hypothesis,
+            label=hypothesis,
+            widget_type="CheckBox",
+            options={"tooltip": tooltip},
+        )
+        hypotheses_widgets.append(widget)
+
+    # P_FP is always required
+    P_FP_hypothesis = hypotheses_widgets[0]
+    P_FP_hypothesis.enabled = False
+
+    return hypotheses_widgets
+
+
+def _create_hypothesis_model_scaling_factor_widgets():
+    """Create widgets for setting the scaling factors of the HypothesisModel"""
+
+    values = [5.0, 3.0, 10.0, 50.0]
+    names = [
+        "lambda_time",
+        "lambda_dist",
+        "lambda_link",
+        "lambda_branch",
+    ]
+    labels = [
+        "λ time",
+        "λ distance",
+        "λ linking",
+        "λ branching",
+    ]
+    tooltips = [
+        "Scaling factor for the influence of time when determining initialization or termination hypotheses.",  # noqa: E501
+        "Scaling factor for the influence of distance at the border when determining initialization or termination hypotheses.",  # noqa: E501
+        "Scaling factor for the influence of track-to-track distance on linking probability.",  # noqa: E501
+        "Scaling factor for the influence of cell state and position on division (mitosis/branching) probability.",  # noqa: E501
+    ]
+
+    scaling_factor_widgets = []
+    for value, name, label, tooltip in zip(values, names, labels, tooltips):
+        widget = create_widget(
+            value=value,
+            name=name,
+            label=label,
+            widget_type="FloatSpinBox",
+            options={"tooltip": tooltip},
+        )
+        scaling_factor_widgets.append(widget)
+
+    return scaling_factor_widgets
+
+
+def _create_hypothesis_model_threshold_widgets():
+    """Create widgets for setting thresholds for the HypothesisModel"""
+
+    tooltip = (
+        "A threshold distance from the edge of the FOV to add an "
+        "initialization or termination hypothesis."
+    )
+    distance_threshold = create_widget(
+        value=20.0,
+        name="theta_dist",
+        label="distance threshold",
+        widget_type="FloatSpinBox",
+        options={"tooltip": tooltip},
+    )
+
+    tooltip = (
+        "A threshold time from the beginning or end of movie to add "
+        "an initialization or termination hypothesis."
+    )
+    time_threshold = create_widget(
+        value=5.0,
+        name="theta_time",
+        label="time threshold",
+        widget_type="FloatSpinBox",
+        options={"tooltip": tooltip},
+    )
+
+    tooltip = (
+        "Number of apoptotic detections to be considered a genuine event.\n"
+        "Detections are counted consecutively from the back of the track"
+    )
+    apoptosis_threshold = create_widget(
+        value=5,
+        name="apop_thresh",
+        label="apoptosis threshold",
+        widget_type="SpinBox",
+        options={"tooltip": tooltip},
+    )
+
+    threshold_widgets = [
+        distance_threshold,
+        time_threshold,
+        apoptosis_threshold,
+    ]
+
+    return threshold_widgets
+
+
+def _create_hypothesis_model_bin_size_widgets():
+    """Create widget for setting bin sizes for the HypothesisModel"""
+
+    tooltip = (
+        "Isotropic spatial bin size for considering hypotheses.\n"
+        "Larger bin sizes generate more hypothesese for each tracklet."
+    )
+    distance_bin_size = create_widget(
+        value=40.0,
+        name="dist_thresh",
+        label="distance bin size",
+        widget_type="FloatSpinBox",
+        options={"tooltip": tooltip},
+    )
+
+    tooltip = (
+        "Temporal bin size for considering hypotheses.\n"
+        "Larger bin sizes generate more hypothesese for each tracklet."
+    )
+    time_bin_size = create_widget(
+        value=2.0,
+        name="time_thresh",
+        label="time bin size",
+        widget_type="FloatSpinBox",
+        options={"tooltip": tooltip},
+    )
+
+    bin_size_widgets = [
+        distance_bin_size,
+        time_bin_size,
+    ]
+
+    return bin_size_widgets
+
+
+def _create_hypothesis_model_widgets(tracker_config: UnscaledTackerConfig):
+    """Create widgets for setting parameters of the MotionModel"""
+
+    hypothesis_model_label = create_widget(
+        label=_make_label_bold("Hypothesis model"),
+        widget_type="Label",
+        gui_only=True,
+    )
+
+    hypotheses_widgets = _create_hypothesis_model_hypotheses_widgets()
+    scaling_factor_widgets = _create_hypothesis_model_scaling_factor_widgets()
+    threshold_widgets = _create_hypothesis_model_threshold_widgets()
+    bin_size_widgets = _create_hypothesis_model_bin_size_widgets()
+
+    tooltip = (
+        "Miss rate for the segmentation.\n"
+        "e.g. 1/100 segmentations incorrect gives a segmentation miss rate of 0.01."
+    )
+    segmentation_miss_rate_widget = create_widget(
+        value=0.1,
+        name="segmentation_miss_rate",
+        label="miss rate",
+        widget_type="FloatSpinBox",
+        options={"tooltip": tooltip},
+    )
+
+    tooltip = (
+        "Disable the time and distance thresholds.\n"
+        "This means that tracks can initialize or terminate anywhere and"
+        "at any time in the dataset."
+    )
+    relax = create_widget(
+        value=True,
+        name="relax",
+        label="relax thresholds",
+        widget_type="CheckBox",
+        options={"tooltip": tooltip},
+    )
+
+    hypothesis_model_widgets = [
+        hypothesis_model_label,
+        *hypotheses_widgets,
+        *scaling_factor_widgets,
+        *threshold_widgets,
+        *bin_size_widgets,
+        segmentation_miss_rate_widget,
+        relax,
+    ]
+
+    return hypothesis_model_widgets
+
+
 def track() -> Container:
     """
     Create a series of widgets programatically
@@ -550,19 +794,26 @@ def track() -> Container:
 
     # TrackerConfigs automatically loads default cell and particle configs
     all_configs = TrackerConfigs()
-    current_config = all_configs["cell"].unscaled_config
+    current_config = all_configs["cell"]
 
     input_widgets = _create_input_widgets()
     update_method_widgets = _create_update_method_widgets(
+        tracker_config=current_config,
+    )
+    motion_model_widgets = _create_motion_model_widgets(
+        tracker_config=current_config,
+    )
+    hypothesis_model_widgets = _create_hypothesis_model_widgets(
         tracker_config=current_config,
     )
 
     widgets: list = [
         *input_widgets,
         *update_method_widgets,
+        *motion_model_widgets,
+        *hypothesis_model_widgets,
     ]
 
-    _create_pydantic_default_widgets(widgets, default_cell_config)
     _create_button_widgets(widgets)
 
     btrack_widget = Container(widgets=widgets, scrollable=True)
