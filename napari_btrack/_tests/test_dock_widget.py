@@ -13,9 +13,10 @@ from btrack.datasets import cell_config, particle_config
 from magicgui.widgets import Container
 
 from napari_btrack.track import (
-    _update_widgets_from_config,
-    _widgets_to_tracker_config,
+    UnscaledTackerConfig,
     track,
+    update_config_from_widgets,
+    update_widgets_from_config,
 )
 
 OLD_WIDGET_LAYERS = 1
@@ -47,64 +48,78 @@ def test_config_to_widgets_round_trip(track_widget, config):
     """Tests that going back and forth between
     config objects and widgets works as expected.
     """
-    expected_config = load_config(config)
-    _update_widgets_from_config(track_widget, expected_config)
-    actual_config = _widgets_to_tracker_config(track_widget)
+
+    expected_config = load_config(config).json()
+
+    unscaled_config = UnscaledTackerConfig(config)
+    update_widgets_from_config(unscaled_config, track_widget)
+    update_config_from_widgets(unscaled_config, track_widget)
+    actual_config = unscaled_config.scale_config().json()
+
     # use json.loads to avoid failure in string comparison because e.g "100.0" != "100"
-    assert json.loads(actual_config.json()) == json.loads(  # noqa: S101
-        expected_config.json()
-    )
+    assert json.loads(actual_config) == json.loads(expected_config)  # noqa: S101
 
 
-@pytest.fixture
-def user_config_path() -> str:
-    """Provides a (dummy) string to represent a user-provided config path."""
-    return "user_config.json"
-
-
-def test_save_button(user_config_path, track_widget):
+def test_save_button(track_widget):
     """Tests that clicking the save configuration button
     triggers a call to btrack.config.save_config with expected arguments.
     """
-    with patch("napari_btrack.track.save_config") as save_config, patch(
-        "napari_btrack.track.get_save_path"
-    ) as get_save_path:
-        get_save_path.return_value = user_config_path
-        track_widget.save_config_button.clicked()
-    assert save_config.call_args[0][0] == user_config_path  # noqa: S101
-    # use json.loads to avoid failure in string comparison because e.g "100.0" != "100"
-    assert json.loads(save_config.call_args[0][1].json()) == json.loads(  # noqa: S101
-        load_config(cell_config()).json()
+
+    current_config_name = track_widget.unscaled_configs.current_config
+    expected_config = (
+        track_widget.unscaled_configs[current_config_name].scale_config().json()
     )
 
+    with patch("napari_btrack.track.get_save_path") as get_save_path:
+        get_save_path.return_value = "user_config.json"
+        track_widget.save_config_button.clicked()
 
-def test_load_button(user_config_path, track_widget):
-    """Tests that clicking the load configuration button
-    triggers a call to btrack.config.load_config with the expected argument
-    """
-    with patch("napari_btrack.track.load_config") as load_config, patch(
-        "napari_btrack.track.get_load_path"
-    ) as get_load_path:
-        get_load_path.return_value = user_config_path
+    actual_config = load_config("user_config.json").json()
+
+    # use json.loads to avoid failure in string comparison because e.g "100.0" != "100"
+    assert json.loads(expected_config) == json.loads(actual_config)  # noqa: S101
+
+
+def test_load_config(track_widget):
+    """Tests that another TrackerConfig can be loaded."""
+
+    all_configs = track_widget.unscaled_configs  # 2 configs loaded by default
+    n_original_configs = len(all_configs.configs)
+    original_config_name = all_configs.current_config
+
+    with patch("napari_btrack.track.get_load_path") as get_load_path:
+        get_load_path.return_value = cell_config()
         track_widget.load_config_button.clicked()
-    assert load_config.call_args[0][0] == user_config_path  # noqa: S101
+
+    n_expected_configs = n_original_configs + 1
+    n_actual_configs = len(all_configs.configs)
+    new_config_name = all_configs.current_config
+
+    assert n_expected_configs == n_actual_configs  # noqa: S101
+    assert track_widget.config_selector.value == "Default"  # noqa: S101
+    assert new_config_name != original_config_name  # noqa: S101
 
 
 def test_reset_button(track_widget):
-    """Tests that clicking the reset button with
-    particle-config-populated widgets resets to the default (i.e. cell-config)
-    """
-    # change config to particle
-    _update_widgets_from_config(track_widget, load_config(particle_config()))
+    """Tests that clicking the reset button restores the default config values"""
 
-    # click reset button (default is cell_config)
+    current_config_name = track_widget.unscaled_configs.current_config
+    expected_config = (
+        track_widget.unscaled_configs[current_config_name].scale_config().json()
+    )
+
+    # change some widget values
+    track_widget.max_search_radius.value += 10
+    track_widget.relax.value = not track_widget.relax
+
+    # click reset button - restores defaults of the currently-selected base config
     track_widget.reset_button.clicked()
-    config_after_reset = _widgets_to_tracker_config(track_widget)
+    actual_config = (
+        track_widget.unscaled_configs[current_config_name].scale_config().json()
+    )
 
     # use json.loads to avoid failure in string comparison because e.g "100.0" != "100"
-    assert json.loads(config_after_reset.json()) == json.loads(  # noqa: S101
-        load_config(cell_config()).json()
-    )
+    assert json.loads(actual_config) == json.loads(expected_config)  # noqa: S101
 
 
 @pytest.fixture
