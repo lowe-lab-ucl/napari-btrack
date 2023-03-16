@@ -42,7 +42,7 @@ ALL_HYPOTHESES = ["P_FP", "P_init", "P_term", "P_link", "P_branch", "P_dead"]
 
 @dataclass
 class Sigmas:
-    """Values to scale unscaled TrackerConfig matrices by"""
+    """Values to scale TrackerConfig MotionModel matrices by"""
 
     P: float
     G: float
@@ -51,7 +51,7 @@ class Sigmas:
 
 @dataclass
 class UnscaledTackerConfig:
-    """A helper dataclass to convert TrackerConfig matrices from scaled to unscaled.
+    """Convert TrackerConfig MotionModel matrices from scaled to unscaled.
 
     This is needed because TrackerConfig stores "scaled" matrices, i.e. it
     doesn't store sigma and the "unscaled" MotionModel matrices separately.
@@ -106,6 +106,41 @@ class UnscaledTackerConfig:
         )
 
         return scaled_config
+
+
+@dataclass
+class TrackerConfigs:
+    configs: dict[str, UnscaledTackerConfig] = field(default_factory=dict)
+
+    def __post_init__(self):
+        """Add the default cell and particle configs."""
+
+        self.add_config(
+            filename=datasets.cell_config(),
+            name="cell",
+        )
+        self.add_config(
+            filename=datasets.particle_config(),
+            name="particle",
+        )
+
+    def __getitem__(self, config_name):
+        return self.configs[config_name]
+
+    def add_config(self, filename, name=None):
+        """Load a TrackerConfig and add it to the store"""
+
+        config = UnscaledTackerConfig(filename)
+        config_name = name if name is not None else config.unscaled_config.name
+
+        # TODO: Make the combobox editable so config names can be changed within the GUI
+        if config_name in self.configs:
+            _msg = (
+                f"Config '{config_name}' already exists - config names must be unique."
+            )
+            raise ValueError(_msg)
+
+        self.configs[config_name] = config
 
 
 @dataclass
