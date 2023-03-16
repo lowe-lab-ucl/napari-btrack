@@ -4,7 +4,6 @@ import copy
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import Any
 
 import btrack
 import napari
@@ -12,8 +11,6 @@ import numpy as np
 import numpy.typing as npt
 from btrack import datasets
 from btrack.config import (
-    HypothesisModel,
-    MotionModel,
     TrackerConfig,
     load_config,
     save_config,
@@ -57,14 +54,14 @@ class UnscaledTackerConfig:
     """
 
     filename: os.PathLike
-    unscaled_config: TrackerConfig = field(init=False)
+    tracker_config: TrackerConfig = field(init=False)
     sigmas: Sigmas = field(init=False)
 
     def __post_init__(self):
         """Create the TrackerConfig and un-scale the MotionModel indices"""
 
         config = load_config(self.filename)
-        self.unscaled_config, self.sigmas = self._unscale_config(config)
+        self.tracker_config, self.sigmas = self._unscale_config(config)
 
     def _unscale_config(self, config: TrackerConfig) -> tuple[TrackerConfig, Sigmas]:
         """Convert the matrices of a scaled TrackerConfig MotionModel to unscaled."""
@@ -96,7 +93,7 @@ class UnscaledTackerConfig:
         """Create a new TrackerConfig with scaled MotionModel matrices"""
 
         # Create a copy so that config values stay in sync with widget values
-        scaled_config = copy.deepcopy(self.unscaled_config)
+        scaled_config = copy.deepcopy(self.tracker_config)
         scaled_config.motion_model.P *= self.sigmas.P
         scaled_config.motion_model.R *= self.sigmas.R
         scaled_config.motion_model.G *= self.sigmas.G
@@ -130,7 +127,7 @@ class TrackerConfigs:
         """Load a TrackerConfig and add it to the store"""
 
         config = UnscaledTackerConfig(filename)
-        config_name = name if name is not None else config.unscaled_config.name
+        config_name = name if name is not None else config.tracker_config.name
 
         # TODO: Make the combobox editable so config names can be changed within the GUI
         if config_name in self.configs:
@@ -140,108 +137,6 @@ class TrackerConfigs:
             raise ValueError(_msg)
 
         self.configs[config_name] = config
-
-
-@dataclass
-class Matrices:
-    """A helper dataclass to adapt matrix representation to and from pydantic.
-    This is needed because TrackerConfig stores "scaled" matrices, i.e.
-    doesn't store sigma and the "unscaled" matrix separately.
-    """
-
-    names: list[str] = field(default_factory=lambda: ["A", "H", "P", "G", "R", "Q"])
-    widget_labels: list[str] = field(
-        default_factory=lambda: [
-            "A_sigma",
-            "H_sigma",
-            "P_sigma",
-            "G_sigma",
-            "R_sigma",
-            "Q_sigma",
-        ]
-    )
-    default_sigmas: list[float] = field(
-        default_factory=lambda: [1.0, 1.0, 150.0, 15.0, 5.0]
-    )
-    unscaled_matrices: dict[str, npt.NDArray[np.float64]] = field(
-        default_factory=lambda: {
-            "A_cell": np.array(
-                [
-                    [1, 0, 0, 1, 0, 0],
-                    [0, 1, 0, 0, 1, 0],
-                    [0, 0, 1, 0, 0, 1],
-                    [0, 0, 0, 1, 0, 0],
-                    [0, 0, 0, 0, 1, 0],
-                    [0, 0, 0, 0, 0, 1],
-                ]
-            ),
-            "A_particle": np.array(
-                [
-                    [1, 0, 0, 0, 0, 0],
-                    [0, 1, 0, 0, 0, 0],
-                    [0, 0, 1, 0, 0, 0],
-                    [0, 0, 0, 1, 0, 0],
-                    [0, 0, 0, 0, 1, 0],
-                    [0, 0, 0, 0, 0, 1],
-                ]
-            ),
-            "H": np.array([[1, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0]]),
-            "P": np.array(
-                [
-                    [0.1, 0, 0, 0, 0, 0],
-                    [0, 0.1, 0, 0, 0, 0],
-                    [0, 0, 0.1, 0, 0, 0],
-                    [0, 0, 0, 1, 0, 0],
-                    [0, 0, 0, 0, 1, 0],
-                    [0, 0, 0, 0, 0, 1],
-                ]
-            ),
-            "G": np.array([[0.5, 0.5, 0.5, 1, 1, 1]]),
-            "R": np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
-            "Q": np.array(
-                [
-                    [56.25, 56.25, 56.25, 112.5, 112.5, 112.5],
-                    [56.25, 56.25, 56.25, 112.5, 112.5, 112.5],
-                    [56.25, 56.25, 56.25, 112.5, 112.5, 112.5],
-                    [112.5, 112.5, 112.5, 225.0, 225.0, 225.0],
-                    [112.5, 112.5, 112.5, 225.0, 225.0, 225.0],
-                    [112.5, 112.5, 112.5, 225.0, 225.0, 225.0],
-                ]
-            ),
-        }
-    )
-
-    @classmethod
-    def get_scaled_matrix(
-        cls, name: str, *, sigma: float, use_cell_config: bool = True
-    ) -> list[float]:
-        """Returns the scaled version (i.e. the unscaled matrix multiplied by sigma)
-        of the matrix.
-
-        Keyword arguments:
-        name -- the matrix name (can be one of A, H, P, G, R)
-        sigma -- the factor to scale the matrix entries with
-        cell -- whether to use cell config matrices or not (default true)
-        """
-        if name == "A":
-            name = "A_cell" if use_cell_config else "A_particle"
-        return (np.asarray(cls().unscaled_matrices[name]) * sigma).tolist()
-
-    @classmethod
-    def get_sigma(cls, name: str, scaled_matrix: npt.NDArray[np.float64]) -> float:
-        """Returns the factor sigma which is the multiplier between the given scaled
-        matrix and the unscaled matrix of the given name.
-
-        Note: The calculation is done with the top-left entry of the matrix,
-        and all other entries are ignored.
-
-        Keyword arguments:
-        name -- the matrix name (can be one of A, H, P, G, R)
-        scaled_matrix -- the scaled matrix to find sigma from.
-        """
-        if name == "A":
-            name = "A_cell"  # doesn't matter which A we use here, as [0][0] is the same
-        return scaled_matrix[0][0] / cls().unscaled_matrices[name][0][0]
 
 
 def run_tracker(
@@ -306,64 +201,6 @@ def html_label_widget(label: str, tag: str = "b") -> dict:
         "widget_type": "Label",
         "label": f"<{tag}>{label}</{tag}>",
     }
-
-
-def _widgets_to_tracker_config(container: Container) -> TrackerConfig:
-    """Helper function to convert from the widgets to a tracker configuration."""
-    motion_model_dict: dict[str, Any] = {}
-    hypothesis_model_dict = {}
-
-    motion_model_keys = default_cell_config.motion_model.dict().keys()
-    hypothesis_model_keys = default_cell_config.hypothesis_model.dict().keys()
-    hypotheses = []
-    for widget in container:
-        # setup motion model
-        # matrices need special treatment
-        if widget.name in Matrices().widget_labels:
-            sigma = getattr(container, widget.name).value
-            matrix_name = widget.name.rstrip("_sigma")
-            matrix = Matrices.get_scaled_matrix(
-                matrix_name,
-                sigma=sigma,
-                use_cell_config=(container.config_selector.value == "cell"),
-            )
-            motion_model_dict[matrix_name] = matrix
-        elif widget.name in motion_model_keys:
-            motion_model_dict[widget.name] = widget.value
-        # setup hypothesis model
-        if widget.name in hypothesis_model_keys:
-            hypothesis_model_dict[widget.name] = widget.value
-        # hypotheses need special treatment
-        if widget.name in ALL_HYPOTHESES and getattr(container, widget.name).value:
-            hypotheses.append(widget.name)
-
-    # add some non-exposed default values to the motion model
-    mode = container.config_selctor.value
-    for default_name, default_value in zip(
-        ["measurements", "states", "dt", "prob_not_assign", "name"],
-        [3, 6, 1.0, 0.001, f"{mode}_motion"],
-    ):
-        motion_model_dict[default_name] = default_value
-
-    # add some non-exposed default value to the hypothesis model
-    for default_name, default_value in zip(
-        ["apoptosis_rate", "eta", "name"],
-        [0.001, 1.0e-10, f"{mode}_hypothesis"],
-    ):
-        hypothesis_model_dict[default_name] = default_value
-
-    # add hypotheses to hypothesis model
-    hypothesis_model_dict["hypotheses"] = hypotheses
-    motion_model = MotionModel(**motion_model_dict)
-    hypothesis_model = HypothesisModel(**hypothesis_model_dict)
-
-    # add parameters outside the internal models
-    max_search_radius = container.max_search_radius.value
-    return TrackerConfig(
-        max_search_radius=max_search_radius,
-        motion_model=motion_model,
-        hypothesis_model=hypothesis_model,
-    )
 
 
 def _update_widgets_from_config(container: Container, config: TrackerConfig) -> None:
@@ -433,9 +270,9 @@ def _create_update_method_widgets(tracker_config: UnscaledTackerConfig):
         "APPROXIMATE: approximate the Bayesian belief matrix. Useful for datasets with "
         "more than 1000 particles per frame."
     )
-    update_method = create_widget(
+    update_method_selector = create_widget(
         value="EXACT",
-        name="update_method",
+        name="update_method_selector",
         label="update method",
         widget_type="ComboBox",
         options={
@@ -450,14 +287,14 @@ def _create_update_method_widgets(tracker_config: UnscaledTackerConfig):
         "method is 'APPROXIMATE'"
     )
     max_search_radius = create_widget(
-        value=tracker_config.unscaled_config.max_search_radius,
+        value=tracker_config.tracker_config.max_search_radius,
         name="max_search_radius",
         label="search radius",
         widget_type="SpinBox",
         options={"tooltip": tooltip},
     )
 
-    update_method_widgets = [update_method, max_search_radius]
+    update_method_widgets = [update_method_selector, max_search_radius]
 
     return update_method_widgets
 
@@ -493,7 +330,7 @@ def _create_motion_model_sigma_widgets(sigmas: Sigmas):
     tooltip = "Magnitude of error in measurements.\n Used to scale the matrix R."
     R_sigma = create_widget(
         value=sigmas.R,
-        name="G_sigma",
+        name="R_sigma",
         label=f"max({_make_label_bold('R')})",
         widget_type="FloatSpinBox",
         options={"tooltip": tooltip},
@@ -523,7 +360,7 @@ def _create_motion_model_widgets(tracker_config: UnscaledTackerConfig):
 
     tooltip = "Integration limits for calculating probabilities"
     accuracy = create_widget(
-        value=tracker_config.unscaled_config.motion_model.accuracy,
+        value=tracker_config.tracker_config.motion_model.accuracy,
         name="accuracy",
         label="accuracy",
         widget_type="FloatSpinBox",
@@ -532,10 +369,10 @@ def _create_motion_model_widgets(tracker_config: UnscaledTackerConfig):
 
     tooltip = "Number of frames without observation before marking as lost"
     max_lost_frames = create_widget(
-        value=tracker_config.unscaled_config.motion_model.max_lost,
+        value=tracker_config.tracker_config.motion_model.max_lost,
         name="max_lost",
         label="max lost",
-        widget_type="FloatSpinBox",
+        widget_type="SpinBox",
         options={"tooltip": tooltip},
     )
 
@@ -800,6 +637,63 @@ def _create_control_widgets():
     return control_buttons
 
 
+def create_config_from_widgets(
+    unscaled_config: UnscaledTackerConfig,
+    container: Container,
+):
+    """
+    Update an UnscaledTrackerConfig with the current widget values and
+    then create a new, scaled, TrackerConfig.
+    """
+
+    sigmas = unscaled_config.sigmas
+    sigmas.P = container.P_sigma.value
+    sigmas.G = container.G_sigma.value
+    sigmas.R = container.R_sigma.value
+
+    config = unscaled_config.tracker_config
+    config.update_method = (
+        container.update_method_selector._widget._qwidget.currentIndex()
+    )
+    config.max_search_radius = container.max_search_radius.value
+
+    motion_model = config.motion_model
+    motion_model.accuracy = container.accuracy.value
+    motion_model.max_lost = container.max_lost.value
+
+    hypothesis_model = config.hypothesis_model
+    hypotheses = []
+    for hypothesis in [
+        "P_FP",
+        "P_init",
+        "P_term",
+        "P_link",
+        "P_branch",
+        "P_dead",
+    ]:
+        if container[hypothesis].value:
+            hypotheses.append(hypothesis)
+    hypothesis_model.hypotheses = hypotheses
+
+    hypothesis_model.lambda_time = container.lambda_time.value
+    hypothesis_model.lambda_dist = container.lambda_dist.value
+    hypothesis_model.lambda_link = container.lambda_link.value
+    hypothesis_model.lambda_branch = container.lambda_branch.value
+
+    hypothesis_model.theta_dist = container.theta_dist.value
+    hypothesis_model.theta_time = container.theta_time.value
+    hypothesis_model.dist_thresh = container.dist_thresh.value
+    hypothesis_model.time_thresh = container.time_thresh.value
+    hypothesis_model.apop_thresh = container.apop_thresh.value
+
+    hypothesis_model.segmentation_miss_rate = container.segmentation_miss_rate.value
+
+    # now we can create an unscaled TrackerConfig from the updated values
+    scaled_config = unscaled_config.scale_config()
+
+    return scaled_config
+
+
 def track() -> Container:
     """Create widgets for the btrack plugin."""
 
@@ -836,11 +730,19 @@ def track() -> Container:
 
     @btrack_widget.call_button.changed.connect
     def run() -> None:
-        config = _widgets_to_tracker_config(btrack_widget)
+        """Update the TrackerConfig from widget values and run tracking"""
+        unscaled_config = all_configs[btrack_widget.config_selector.current_choice]
+        config = create_config_from_widgets(
+            unscaled_config=unscaled_config,
+            container=btrack_widget,
+        )
         segmentation = btrack_widget.segmentation_selector.value
         data, properties, graph = run_tracker(segmentation, config)
         btrack_widget.viewer.add_tracks(
-            data=data, properties=properties, graph=graph, name=f"{segmentation}_btrack"
+            data=data,
+            properties=properties,
+            graph=graph,
+            name=f"{segmentation}_btrack",
         )
 
     @btrack_widget.config_selector.changed.connect
@@ -852,8 +754,15 @@ def track() -> Container:
     @btrack_widget.save_config_button.changed.connect
     def save_config_to_json() -> None:
         save_path = get_save_path()
-        if save_path:  # save path is None if user cancels
-            save_config(save_path, _widgets_to_tracker_config(btrack_widget))
+        if save_path is None:
+            # user has cancelled
+            return
+        unscaled_config = all_configs[btrack_widget.config_selector.current_choice]
+        config = create_config_from_widgets(
+            unscaled_config=unscaled_config,
+            container=btrack_widget,
+        )
+        save_config(save_path, config)
 
     @btrack_widget.load_config_button.changed.connect
     def load_config_from_json() -> None:
