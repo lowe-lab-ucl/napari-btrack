@@ -12,8 +12,8 @@ from btrack.config import load_config
 from btrack.datasets import cell_config, particle_config
 from magicgui.widgets import Container
 
+from napari_btrack.config import UnscaledTackerConfig
 from napari_btrack.track import (
-    UnscaledTackerConfig,
     track,
     update_config_from_widgets,
     update_widgets_from_config,
