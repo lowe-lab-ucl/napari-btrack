@@ -349,27 +349,6 @@ def _create_per_model_widgets(model: BaseModel) -> list[Widget]:
     return widgets
 
 
-def _create_napari_specific_widgets(widgets: list[Widget]) -> None:
-    """
-    Add the widgets which interact with napari itself
-    """
-    widget = create_widget(**html_label_widget("Segmentation"))
-    widgets.append(widget)
-    print(widget)
-    segmentation_widget = create_widget(
-        name="segmentation",
-        annotation=napari.layers.Labels,
-        options={
-            "tooltip": (
-                "Should be a Labels layer. Convert an Image to Labels by right-clicking"
-                "on it in the layers list, and clicking on 'Convert to Labels'"
-            ),
-        },
-    )
-    widgets.append(segmentation_widget)
-    print(segmentation_widget)
-
-
 def _create_pydantic_default_widgets(
     widgets: list[Widget], config: TrackerConfig
 ) -> None:
@@ -382,18 +361,6 @@ def _create_pydantic_default_widgets(
     model_configs = [config.motion_model, config.hypothesis_model]
     model_widgets = [_create_per_model_widgets(model) for model in model_configs]
     widgets.extend([item for sublist in model_widgets for item in sublist])
-
-
-def _create_cell_or_particle_widget(widgets: list[Widget]) -> None:
-    """Create a dropdown menu to choose between cell or particle mode."""
-    widget = create_widget(**html_label_widget("Mode"))
-    widgets.append(widget)
-    print("mode", widget)
-    widget = create_widget(
-        name="mode", value="cell", options={"choices": ["cell", "particle"]}
-    )
-    widgets.append(widget)
-    print(widget)
 
 
 def _widgets_to_tracker_config(container: Container) -> TrackerConfig:
@@ -413,7 +380,7 @@ def _widgets_to_tracker_config(container: Container) -> TrackerConfig:
             matrix = Matrices.get_scaled_matrix(
                 matrix_name,
                 sigma=sigma,
-                use_cell_config=(container.mode.value == "cell"),
+                use_cell_config=(container.config_selector.value == "cell"),
             )
             motion_model_dict[matrix_name] = matrix
         elif widget.name in motion_model_keys:
@@ -426,7 +393,7 @@ def _widgets_to_tracker_config(container: Container) -> TrackerConfig:
             hypotheses.append(widget.name)
 
     # add some non-exposed default values to the motion model
-    mode = container.mode.value
+    mode = container.config_selctor.value
     for default_name, default_value in zip(
         ["measurements", "states", "dt", "prob_not_assign", "name"],
         [3, 6, 1.0, 0.001, f"{mode}_motion"],
@@ -477,7 +444,7 @@ def _update_widgets_from_config(container: Container, config: TrackerConfig) -> 
     # A matrix is 1 or 0 (1 for cell mode)
     mode_is_cell = config.motion_model.A[0, 3] == 1
     logging.info(f"mode is cell: {mode_is_cell}")
-    container.mode.value = "cell" if mode_is_cell else "particle"
+    container.config_selector.value = "cell" if mode_is_cell else "particle"
 
 
 def _create_button_widgets(widgets: list[Widget]) -> None:
@@ -506,6 +473,37 @@ def _create_button_widgets(widgets: list[Widget]) -> None:
         widgets.append(widget)
 
 
+def _create_input_widgets():
+    """Create widgets for selecting labels layer and TrackerConfig"""
+
+    tooltip = (
+        "Select a 'Labels' layer to use for tracking. "
+        "To use an 'Image' layer, first convert 'Labels' by right-clicking "
+        "on it in the layers list, and clicking on 'Convert to Labels'"
+    )
+    segmentation_selector = create_widget(
+        annotation=napari.layers.Labels,
+        name="segmentation_selector",
+        label="segmentation",
+        options={"tooltip": tooltip},
+    )
+
+    tooltip = "Select a loaded configuration. Note, this will update values set below."
+    config_selector = create_widget(
+        value="cell",
+        name="config_selector",
+        label="base config",
+        widget_type="ComboBox",
+        options={
+            "choices": ["cell", "particle"],
+            "tooltip": tooltip,
+        },
+    )
+
+    input_widgets = [segmentation_selector, config_selector]
+    return input_widgets
+
+
 def track() -> Container:
     """
     Create a series of widgets programatically
@@ -513,9 +511,9 @@ def track() -> Container:
     # initialise a list for all widgets
     widgets: list = []
 
-    # create all the widgets
-    _create_napari_specific_widgets(widgets)
-    _create_cell_or_particle_widget(widgets)
+    input_widgets = _create_input_widgets()
+    widgets.extend(input_widgets)
+
     _create_pydantic_default_widgets(widgets, default_cell_config)
     _create_button_widgets(widgets)
 
@@ -529,11 +527,17 @@ def track() -> Container:
     @btrack_widget.call_button.changed.connect
     def run() -> None:
         config = _widgets_to_tracker_config(btrack_widget)
-        segmentation = btrack_widget.segmentation.value
+        segmentation = btrack_widget.segmentation_selector.value
         data, properties, graph = run_tracker(segmentation, config)
         btrack_widget.viewer.add_tracks(
             data=data, properties=properties, graph=graph, name=f"{segmentation}_btrack"
         )
+
+    @btrack_widget.config_selector.changed.connect
+    def select_config() -> None:
+        pass
+        # TODO: add function to update widgets from current UnscaledTackerConfig
+        # update_widgets_from_config(config=all_configs[new_config_name])
 
     @btrack_widget.save_config_button.changed.connect
     def save_config_to_json() -> None:
