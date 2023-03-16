@@ -477,7 +477,7 @@ def _create_input_widgets():
     """Create widgets for selecting labels layer and TrackerConfig"""
 
     tooltip = (
-        "Select a 'Labels' layer to use for tracking. "
+        "Select a 'Labels' layer to use for tracking.\n"
         "To use an 'Image' layer, first convert 'Labels' by right-clicking "
         "on it in the layers list, and clicking on 'Convert to Labels'"
     )
@@ -488,7 +488,7 @@ def _create_input_widgets():
         options={"tooltip": tooltip},
     )
 
-    tooltip = "Select a loaded configuration. Note, this will update values set below."
+    tooltip = "Select a loaded configuration.\nNote, this will update values set below."
     config_selector = create_widget(
         value="cell",
         name="config_selector",
@@ -501,18 +501,66 @@ def _create_input_widgets():
     )
 
     input_widgets = [segmentation_selector, config_selector]
+
     return input_widgets
+
+
+def _create_update_method_widgets(tracker_config: TrackerConfig):
+    """Create widgets for selecting the update method"""
+
+    tooltip = (
+        "Select the update method.\n"
+        "EXACT: exact calculation of Bayesian belief matrix.\n"
+        "APPROXIMATE: approximate the Bayesian belief matrix. Useful for datasets with "
+        "more than 1000 particles per frame."
+    )
+    update_method = create_widget(
+        value="EXACT",
+        name="update_method",
+        label="update method",
+        widget_type="ComboBox",
+        options={
+            "choices": ["EXACT", "APPROXIMATE"],
+            "tooltip": tooltip,
+        },
+    )
+
+    # TODO: this widget should be hidden when the update method is set to EXACT
+    tooltip = (
+        "The local spatial search radius (isotropic, pixels) used when the update "
+        "method is 'APPROXIMATE'"
+    )
+    max_search_radius = create_widget(
+        value=tracker_config.max_search_radius,
+        name="max_search_radius",
+        label="search radius",
+        widget_type="SpinBox",
+        options={"tooltip": tooltip},
+    )
+
+    update_method_widgets = [update_method, max_search_radius]
+
+    return update_method_widgets
 
 
 def track() -> Container:
     """
     Create a series of widgets programatically
     """
-    # initialise a list for all widgets
-    widgets: list = []
+
+    # TrackerConfigs automatically loads default cell and particle configs
+    all_configs = TrackerConfigs()
+    current_config = all_configs["cell"].unscaled_config
 
     input_widgets = _create_input_widgets()
-    widgets.extend(input_widgets)
+    update_method_widgets = _create_update_method_widgets(
+        tracker_config=current_config,
+    )
+
+    widgets: list = [
+        *input_widgets,
+        *update_method_widgets,
+    ]
 
     _create_pydantic_default_widgets(widgets, default_cell_config)
     _create_button_widgets(widgets)
