@@ -44,8 +44,6 @@ ALL_HYPOTHESES = ["P_FP", "P_init", "P_term", "P_link", "P_branch", "P_dead"]
 class Sigmas:
     """Values to scale unscaled TrackerConfig matrices by"""
 
-    A: float
-    H: float
     P: float
     G: float
     R: float
@@ -72,40 +70,22 @@ class UnscaledTackerConfig:
     def _unscale_config(self, config: TrackerConfig) -> tuple[TrackerConfig, Sigmas]:
         """Convert the matrices of a scaled TrackerConfig MotionModel to unscaled."""
 
-        A_sigma = np.max(config.motion_model.A)
-        config.motion_model.A /= A_sigma
-
-        H_sigma = np.max(config.motion_model.H)
-        config.motion_model.H /= H_sigma
-
         P_sigma = np.max(config.motion_model.P)
         config.motion_model.P /= P_sigma
 
         R_sigma = np.max(config.motion_model.R)
         config.motion_model.R /= R_sigma
 
-        # Use only G, not Q
-        # If we use both G and Q, then Q_sigma must be updated when G_sigma is,
-        # and vice-versa
+        # Use only G, not Q. If we use both G and Q, then Q_sigma must be updated
+        # when G_sigma is, and vice-versa
         # Instead, use G if it exists. If not, determine G from Q, which we can
-        # do because Q is symmetric
-        if config.motion_model.G is not None:
-            G_sigma = np.max(config.motion_model.G)
-            config.motion_model.G /= G_sigma
-        elif config.motion_model.Q is not None:
-            Q_sigma = np.max(config.motion_model.Q)
-            G_sigma = Q_sigma**0.5
-            config.motion_model.Q /= Q_sigma
-            config.motion_model.G = config.motion_model.Q[0] / np.max(
-                config.motion_model.Q[0]
-            )
-        else:
-            _msg = "Either a `G` or `Q` matrix is required for the MotionModel."
-            raise ValueError(_msg)
+        # do because Q = G.T @ G
+        if config.motion_model.G is None:
+            config.motion_model.G = config.motion_model.Q.diagonal() ** 0.5
+        G_sigma = np.max(config.motion_model.G)
+        config.motion_model.G /= G_sigma
 
         sigmas = Sigmas(
-            A=A_sigma,
-            H=H_sigma,
             P=P_sigma,
             G=G_sigma,
             R=R_sigma,
@@ -118,9 +98,6 @@ class UnscaledTackerConfig:
 
         # Create a copy so that config values stay in sync with widget values
         scaled_config = copy.deepcopy(self.unscaled_config)
-
-        scaled_config.motion_model.A *= self.sigmas.A
-        scaled_config.motion_model.H *= self.sigmas.H
         scaled_config.motion_model.P *= self.sigmas.P
         scaled_config.motion_model.R *= self.sigmas.R
         scaled_config.motion_model.G *= self.sigmas.G
@@ -309,22 +286,28 @@ def _create_per_model_widgets(model: BaseModel) -> list[Widget]:
     print(type(model), widget)
     for parameter, default_value in model:
         if parameter in HIDDEN_VARIABLE_NAMES:
-            print(f'{parameter} skipped')
+            print(f"{parameter} skipped")
             continue
         if parameter in Matrices().names:
             # only expose the scalar sigma to user
             sigma = Matrices.get_sigma(parameter, default_value)
-            widget = create_widget(value=sigma, name=f"{parameter}_sigma", annotation=float)
+            widget = create_widget(
+                value=sigma, name=f"{parameter}_sigma", annotation=float
+            )
             widgets.append(widget)
             print(type(model), widget)
         elif parameter == "hypotheses":
             # the hypothesis list should be represented as a series of checkboxes
             for choice in ALL_HYPOTHESES:
-                widget = create_widget(value=(choice in default_value), name=choice, annotation=bool)
+                widget = create_widget(
+                    value=(choice in default_value), name=choice, annotation=bool
+                )
                 widgets.append(widget)
                 print(type(model), widget)
         else:  # use napari default
-            widget = create_widget(value=default_value, name=parameter, annotation=type(default_value))
+            widget = create_widget(
+                value=default_value, name=parameter, annotation=type(default_value)
+            )
             widgets.append(widget)
             print(type(model), widget)
 
@@ -370,8 +353,10 @@ def _create_cell_or_particle_widget(widgets: list[Widget]) -> None:
     """Create a dropdown menu to choose between cell or particle mode."""
     widget = create_widget(**html_label_widget("Mode"))
     widgets.append(widget)
-    print('mode', widget)
-    widget = create_widget(name="mode", value="cell", options={"choices": ["cell", "particle"]})
+    print("mode", widget)
+    widget = create_widget(
+        name="mode", value="cell", options={"choices": ["cell", "particle"]}
+    )
     widgets.append(widget)
     print(widget)
 
@@ -479,8 +464,10 @@ def _create_button_widgets(widgets: list[Widget]) -> None:
     widgets.append(widget)
     print(widget)
     for widget_name, widget_label in zip(widget_names, widget_labels):
-        widget = create_widget(name=widget_name, label=widget_label, widget_type=PushButton)
-        print('Control buttons', widget)
+        widget = create_widget(
+            name=widget_name, label=widget_label, widget_type=PushButton
+        )
+        print("Control buttons", widget)
         widgets.append(widget)
 
 
