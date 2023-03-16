@@ -8,8 +8,6 @@ from btrack.config import (
     save_config,
 )
 from btrack.utils import segmentation_to_objects
-from magicgui.application import use_app
-from magicgui.types import FileDialogMode
 from magicgui.widgets import Container, create_widget
 from qtpy.QtWidgets import QScrollArea
 
@@ -17,6 +15,10 @@ from napari_btrack.config import (
     Sigmas,
     TrackerConfigs,
     UnscaledTackerConfig,
+)
+from napari_btrack.widgets import (
+    load_path_dialogue_box,
+    save_path_dialogue_box,
 )
 
 __all__ = [
@@ -54,28 +56,6 @@ def run_tracker(
         # get the tracks in a format for napari visualization
         data, properties, graph = tracker.to_napari(ndim=2)
         return data, properties, graph
-
-
-def get_save_path():
-    """Helper function to open a save configuration file dialog."""
-    show_file_dialog = use_app().get_obj("show_file_dialog")
-    return show_file_dialog(
-        mode=FileDialogMode.OPTIONAL_FILE,
-        caption="Specify file to save btrack configuration",
-        start_path=None,
-        filter="*.json",
-    )
-
-
-def get_load_path():
-    """Helper function to open a load configuration file dialog."""
-    show_file_dialog = use_app().get_obj("show_file_dialog")
-    return show_file_dialog(
-        mode=FileDialogMode.EXISTING_FILE,
-        caption="Choose JSON file containing btrack configuration",
-        start_path=None,
-        filter="*.json",
-    )
 
 
 def html_label_widget(label: str, tag: str = "b") -> dict:
@@ -692,7 +672,7 @@ def track() -> Container:  # noqa: PLR0915
     def save_config_to_json() -> None:
         """Save widget values to file"""
 
-        save_path = get_save_path()
+        save_path = save_path_dialogue_box()
         if save_path is None:
             # user has cancelled
             return
@@ -710,7 +690,7 @@ def track() -> Container:  # noqa: PLR0915
     def load_config_from_json() -> None:
         """Load a config from file and set it as the selected base config"""
 
-        load_path = get_load_path()
+        load_path = load_path_dialogue_box()
         if load_path is None:
             # user has cancelled
             return
