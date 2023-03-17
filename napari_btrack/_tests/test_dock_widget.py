@@ -33,7 +33,7 @@ def test_add_widget(make_napari_viewer):
         widget_name="Track",
     )
 
-    assert len(list(viewer.window._dock_widgets)) == num_dw + 1  # noqa: S101
+    assert len(list(viewer.window._dock_widgets)) == num_dw + 1
 
 
 @pytest.fixture
@@ -58,7 +58,7 @@ def test_config_to_widgets_round_trip(track_widget, config):
     actual_config = unscaled_config.scale_config().json()
 
     # use json.loads to avoid failure in string comparison because e.g "100.0" != "100"
-    assert json.loads(actual_config) == json.loads(expected_config)  # noqa: S101
+    assert json.loads(actual_config) == json.loads(expected_config)
 
 
 def test_save_button(track_widget):
@@ -79,7 +79,7 @@ def test_save_button(track_widget):
     actual_config = btrack.config.load_config("user_config.json").json()
 
     # use json.loads to avoid failure in string comparison because e.g "100.0" != "100"
-    assert json.loads(expected_config) == json.loads(actual_config)  # noqa: S101
+    assert json.loads(expected_config) == json.loads(actual_config)
 
 
 def test_load_config(track_widget):
@@ -97,8 +97,8 @@ def test_load_config(track_widget):
     # We didn't override the name, so it should be ''Default
     new_config_name = track_widget.config_selector.current_choice
 
-    assert track_widget.config_selector.value == "Default"  # noqa: S101
-    assert new_config_name != original_config_name  # noqa: S101
+    assert track_widget.config_selector.value == "Default"
+    assert new_config_name != original_config_name
 
 
 def test_reset_button(track_widget):
@@ -117,8 +117,8 @@ def test_reset_button(track_widget):
     new_max_search_radius = track_widget.max_search_radius.value
     new_relax = track_widget.relax.value
 
-    assert new_max_search_radius == original_max_search_radius  # noqa: S101
-    assert new_relax == original_relax  # noqa: S101s
+    assert new_max_search_radius == original_max_search_radius
+    assert new_relax == original_relax
 
 
 @pytest.fixture
@@ -145,10 +145,8 @@ def test_run_button(track_widget, simplistic_tracker_outputs):
         run_tracker.return_value = simplistic_tracker_outputs
         segmentation = datasets.example_segmentation()
         track_widget.viewer.add_labels(segmentation)
-        assert len(track_widget.viewer.layers) == OLD_WIDGET_LAYERS  # noqa: S101
+        assert len(track_widget.viewer.layers) == OLD_WIDGET_LAYERS
         track_widget.call_button.clicked()
-    assert run_tracker.called  # noqa: S101
-    assert len(track_widget.viewer.layers) == NEW_WIDGET_LAYERS  # noqa: S101
-    assert isinstance(  # noqa: S101
-        track_widget.viewer.layers[-1], napari.layers.Tracks
-    )
+    assert run_tracker.called
+    assert len(track_widget.viewer.layers) == NEW_WIDGET_LAYERS
+    assert isinstance(track_widget.viewer.layers[-1], napari.layers.Tracks)

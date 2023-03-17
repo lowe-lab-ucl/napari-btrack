@@ -112,6 +112,9 @@ mccabe.max-complexity = 18
 "__init__.py" = [
     "F401", # unused-import
 ]
+"test_*.py" = [
+    "S101", # use of 'assert'
+]
 
 [tool.setuptools_scm]
 write_to = "napari_btrack/_version.py"
