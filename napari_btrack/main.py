@@ -18,43 +18,11 @@ import napari_btrack.sync
 import napari_btrack.widgets
 
 __all__ = [
-    "track",
+    "create_btrack_widget",
 ]
 
 
-def run_tracker(
-    segmentation: napari.layers.Image | napari.layers.Labels,
-    tracker_config: TrackerConfig,
-) -> tuple[npt.NDArray, dict, dict]:
-    """
-    Runs BayesianTracker with given segmentation and configuration.
-    """
-    with btrack.BayesianTracker() as tracker:
-        tracker.configure(tracker_config)
-
-        # append the objects to be tracked
-        segmented_objects = segmentation_to_objects(segmentation.data)
-        tracker.append(segmented_objects)
-
-        # set the volume
-        segmentation_size = segmentation.level_shapes[0]
-        # btrack order of dimensions is XY(Z)
-        # napari order of dimensions is T(Z)XY
-        # so we ignore the first entry and then iterate backwards
-        tracker.volume = tuple((0, s) for s in segmentation_size[1:][::-1])
-
-        # track them (in interactive mode)
-        tracker.track_interactive(step_size=100)
-
-        # generate hypotheses and run the global optimizer
-        tracker.optimize()
-
-        # get the tracks in a format for napari visualization
-        data, properties, graph = tracker.to_napari(ndim=2)
-        return data, properties, graph
-
-
-def track() -> Container:
+def create_btrack_widget() -> Container:
     """Create widgets for the btrack plugin."""
 
     # First create our UI along with some default configs for the widgets
@@ -102,7 +70,7 @@ def track() -> Container:
 
         config = unscaled_config.scale_config()
         segmentation = btrack_widget.segmentation_selector.value
-        data, properties, graph = run_tracker(segmentation, config)
+        data, properties, graph = _run_tracker(segmentation, config)
 
         btrack_widget.viewer.add_tracks(
             data=data,
@@ -165,3 +133,35 @@ def track() -> Container:
     btrack_widget._widget._qwidget = scroll
 
     return btrack_widget
+
+
+def _run_tracker(
+    segmentation: napari.layers.Image | napari.layers.Labels,
+    tracker_config: TrackerConfig,
+) -> tuple[npt.NDArray, dict, dict]:
+    """
+    Runs BayesianTracker with given segmentation and configuration.
+    """
+    with btrack.BayesianTracker() as tracker:
+        tracker.configure(tracker_config)
+
+        # append the objects to be tracked
+        segmented_objects = segmentation_to_objects(segmentation.data)
+        tracker.append(segmented_objects)
+
+        # set the volume
+        segmentation_size = segmentation.level_shapes[0]
+        # btrack order of dimensions is XY(Z)
+        # napari order of dimensions is T(Z)XY
+        # so we ignore the first entry and then iterate backwards
+        tracker.volume = tuple((0, s) for s in segmentation_size[1:][::-1])
+
+        # track them (in interactive mode)
+        tracker.track_interactive(step_size=100)
+
+        # generate hypotheses and run the global optimizer
+        tracker.optimize()
+
+        # get the tracks in a format for napari visualization
+        data, properties, graph = tracker.to_napari(ndim=2)
+        return data, properties, graph
