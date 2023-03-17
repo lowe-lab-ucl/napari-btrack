@@ -17,7 +17,7 @@ from btrack import datasets
 from btrack.datasets import cell_config, particle_config
 
 import napari_btrack
-import napari_btrack.track
+import napari_btrack.main
 
 OLD_WIDGET_LAYERS = 1
 NEW_WIDGET_LAYERS = 2
@@ -40,7 +40,7 @@ def test_add_widget(make_napari_viewer):
 def track_widget(make_napari_viewer) -> Container:
     """Provides an instance of the track widget to test"""
     make_napari_viewer()  # make sure there is a viewer available
-    return napari_btrack.track.track()
+    return napari_btrack.main.track()
 
 
 @pytest.mark.parametrize("config", [cell_config(), particle_config()])
@@ -147,7 +147,7 @@ def test_run_button(track_widget, simplistic_tracker_outputs):
     """Tests that clicking the run button calls run_tracker,
     and that the napari viewer has an additional tracks layer after running.
     """
-    with patch("napari_btrack.track.run_tracker") as run_tracker:
+    with patch("napari_btrack.main.run_tracker") as run_tracker:
         run_tracker.return_value = simplistic_tracker_outputs
         segmentation = datasets.example_segmentation()
         track_widget.viewer.add_labels(segmentation)
