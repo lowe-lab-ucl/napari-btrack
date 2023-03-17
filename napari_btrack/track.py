@@ -8,12 +8,11 @@ from btrack.config import (
     save_config,
 )
 from btrack.utils import segmentation_to_objects
-from magicgui.widgets import Container, create_widget
+from magicgui.widgets import Container
 from qtpy.QtWidgets import QScrollArea
 
 import napari_btrack.widgets
 from napari_btrack.config import (
-    Sigmas,
     TrackerConfigs,
     UnscaledTackerConfig,
 )
@@ -53,93 +52,6 @@ def run_tracker(
         # get the tracks in a format for napari visualization
         data, properties, graph = tracker.to_napari(ndim=2)
         return data, properties, graph
-
-
-def _make_label_bold(label: str) -> str:
-    """Generate html for a bold label"""
-
-    bold_label = f"<b>{label}</b>"
-    return bold_label
-
-
-def _create_motion_model_sigma_widgets(sigmas: Sigmas):
-    """Create widgest for setting the magnitudes of the MotionModel matrices"""
-
-    tooltip = "Magnitude of error in initial estimates.\n Used to scale the matrix P."
-    P_sigma = create_widget(
-        value=sigmas.P,
-        name="P_sigma",
-        label=f"max({_make_label_bold('P')})",
-        widget_type="FloatSpinBox",
-        options={"tooltip": tooltip},
-    )
-
-    tooltip = "Magnitude of error in process.\n Used to scale the matrix G."
-    G_sigma = create_widget(
-        value=sigmas.G,
-        name="G_sigma",
-        label=f"max({_make_label_bold('G')})",
-        widget_type="FloatSpinBox",
-        options={"tooltip": tooltip},
-    )
-
-    tooltip = "Magnitude of error in measurements.\n Used to scale the matrix R."
-    R_sigma = create_widget(
-        value=sigmas.R,
-        name="R_sigma",
-        label=f"max({_make_label_bold('R')})",
-        widget_type="FloatSpinBox",
-        options={"tooltip": tooltip},
-    )
-
-    sigma_widgets = [
-        P_sigma,
-        G_sigma,
-        R_sigma,
-    ]
-
-    return sigma_widgets
-
-
-def _create_motion_model_widgets(tracker_config: UnscaledTackerConfig):
-    """Create widgets for setting parameters of the MotionModel"""
-
-    motion_model_label = create_widget(
-        label=_make_label_bold("Motion model"),
-        widget_type="Label",
-        gui_only=True,
-    )
-
-    sigma_widgets = _create_motion_model_sigma_widgets(
-        sigmas=tracker_config.sigmas,
-    )
-
-    tooltip = "Integration limits for calculating probabilities"
-    accuracy = create_widget(
-        value=tracker_config.tracker_config.motion_model.accuracy,
-        name="accuracy",
-        label="accuracy",
-        widget_type="FloatSpinBox",
-        options={"tooltip": tooltip},
-    )
-
-    tooltip = "Number of frames without observation before marking as lost"
-    max_lost_frames = create_widget(
-        value=tracker_config.tracker_config.motion_model.max_lost,
-        name="max_lost",
-        label="max lost",
-        widget_type="SpinBox",
-        options={"tooltip": tooltip},
-    )
-
-    motion_model_widgets = [
-        motion_model_label,
-        *sigma_widgets,
-        accuracy,
-        max_lost_frames,
-    ]
-
-    return motion_model_widgets
 
 
 def update_config_from_widgets(
@@ -248,15 +160,11 @@ def track() -> Container:  # noqa: PLR0915
 
     # TrackerConfigs automatically loads default cell and particle configs
     all_configs = TrackerConfigs()
-    current_config = all_configs["cell"]
+    all_configs["cell"]
 
     input_widgets = napari_btrack.widgets.create_input_widgets()
-    update_method_widgets = napari_btrack.widgets.create_update_method_widgets(
-        tracker_config=current_config,
-    )
-    motion_model_widgets = _create_motion_model_widgets(
-        tracker_config=current_config,
-    )
+    update_method_widgets = napari_btrack.widgets.create_update_method_widgets()
+    motion_model_widgets = napari_btrack.widgets.create_motion_model_widgets()
     hypothesis_model_widgets = napari_btrack.widgets.create_hypothesis_model_widgets()
     control_buttons = napari_btrack.widgets.create_control_widgets()
 

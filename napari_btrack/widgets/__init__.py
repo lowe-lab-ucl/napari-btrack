@@ -6,3 +6,4 @@ from napari_btrack.widgets.general import (
     save_path_dialogue_box,
 )
 from napari_btrack.widgets.hypothesis import create_hypothesis_model_widgets
+from napari_btrack.widgets.motion import create_motion_model_widgets

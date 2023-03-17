@@ -1,10 +1,5 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from napari_btrack.config import UnscaledTackerConfig
-
 import magicgui
 import napari
 from magicgui.types import FileDialogMode
@@ -72,7 +67,7 @@ def create_input_widgets():
     return input_widgets
 
 
-def create_update_method_widgets(tracker_config: UnscaledTackerConfig):
+def create_update_method_widgets():
     """Create widgets for selecting the update method"""
 
     tooltip = (
@@ -98,7 +93,7 @@ def create_update_method_widgets(tracker_config: UnscaledTackerConfig):
         "method is 'APPROXIMATE'"
     )
     max_search_radius = magicgui.widgets.create_widget(
-        value=tracker_config.tracker_config.max_search_radius,
+        value=100,
         name="max_search_radius",
         label="search radius",
         widget_type="SpinBox",
