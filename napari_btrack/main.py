@@ -7,6 +7,8 @@ if TYPE_CHECKING:
     from btrack.config import TrackerConfig
     from magicgui.widgets import Container
 
+    from napari_btrack.config import TrackerConfigs
+
 import btrack
 import magicgui.widgets
 import napari
@@ -26,113 +28,87 @@ def create_btrack_widget() -> Container:
     """Create widgets for the btrack plugin."""
 
     # First create our UI along with some default configs for the widgets
-    widgets = napari_btrack.widgets.create_widgets()
     all_configs = napari_btrack.config.create_default_configs()
-
+    widgets = napari_btrack.widgets.create_widgets()
     btrack_widget = magicgui.widgets.Container(widgets=widgets, scrollable=True)
     btrack_widget.viewer = napari.current_viewer()
-    btrack_widget.unscaled_configs = all_configs
 
     # Now set the callbacks
-    @btrack_widget.config_selector.changed.connect
-    def select_config():
-        """Set widget values from a newly-selected base config"""
+    btrack_widget.config_selector.changed.connect(
+        lambda selected: select_config(btrack_widget, all_configs, selected),
+    )
 
-        # first update the previous config with the current widget values
-        previous_config_name = all_configs.current_config
-        previous_config = all_configs[previous_config_name]
-        previous_config = napari_btrack.sync.update_config_from_widgets(
-            unscaled_config=previous_config,
-            container=btrack_widget,
-        )
+    btrack_widget.call_button.changed.connect(
+        lambda: run(btrack_widget, all_configs),
+    )
 
-        # now load the newly-selected config and set widget values
-        new_config_name = btrack_widget.config_selector.value
-        all_configs.current_config = new_config_name
-        new_config = all_configs[new_config_name]
-        new_config = napari_btrack.sync.update_widgets_from_config(
-            unscaled_config=new_config,
-            container=btrack_widget,
-        )
+    btrack_widget.reset_button.changed.connect(
+        lambda: restore_defaults(btrack_widget, all_configs),
+    )
 
-    @btrack_widget.call_button.changed.connect
-    def run() -> None:
-        """
-        Update the TrackerConfig from widget values, run tracking,
-        and add tracks to the viewer.
-        """
+    btrack_widget.save_config_button.changed.connect(
+        lambda: save_config_to_json(btrack_widget, all_configs)
+    )
 
-        unscaled_config = all_configs[btrack_widget.config_selector.current_choice]
-        unscaled_config = napari_btrack.sync.update_config_from_widgets(
-            unscaled_config=unscaled_config,
-            container=btrack_widget,
-        )
+    btrack_widget.load_config_button.changed.connect(
+        lambda: load_config_from_json(btrack_widget, all_configs)
+    )
 
-        config = unscaled_config.scale_config()
-        segmentation = btrack_widget.segmentation_selector.value
-        data, properties, graph = _run_tracker(segmentation, config)
-
-        btrack_widget.viewer.add_tracks(
-            data=data,
-            properties=properties,
-            graph=graph,
-            name=f"{segmentation}_btrack",
-        )
-
-    @btrack_widget.reset_button.changed.connect
-    def restore_defaults() -> None:
-        """ "Reload the config file and set widgets to default values."""
-
-        config_name = all_configs.current_config
-        filename = all_configs[config_name].filename
-        all_configs.add_config(
-            filename=filename,
-            overwrite=True,
-        )
-
-        config = all_configs[config_name]
-        config = napari_btrack.sync.update_widgets_from_config(
-            unscaled_config=config,
-            container=btrack_widget,
-        )
-
-    @btrack_widget.save_config_button.changed.connect
-    def save_config_to_json() -> None:
-        """Save widget values to file"""
-
-        save_path = napari_btrack.widgets.save_path_dialogue_box()
-        if save_path is None:
-            # user has cancelled
-            return
-
-        unscaled_config = all_configs[btrack_widget.config_selector.current_choice]
-        napari_btrack.sync.update_config_from_widgets(
-            unscaled_config=unscaled_config,
-            container=btrack_widget,
-        )
-        config = unscaled_config.scale_config()
-
-        btrack.config.save_config(save_path, config)
-
-    @btrack_widget.load_config_button.changed.connect
-    def load_config_from_json() -> None:
-        """Load a config from file and set it as the selected base config"""
-
-        load_path = napari_btrack.widgets.load_path_dialogue_box()
-        if load_path is None:
-            # user has cancelled
-            return
-
-        config_name = all_configs.add_config(filename=load_path, overwrite=False)
-        btrack_widget.config_selector.options["choices"].append(config_name)
-        btrack_widget.config_selector.reset_choices()
-        btrack_widget.config_selector.value = config_name
-
+    # there are lots of widgets so make the container scrollable
     scroll = qtpy.QtWidgets.QScrollArea()
     scroll.setWidget(btrack_widget._widget._qwidget)
     btrack_widget._widget._qwidget = scroll
 
     return btrack_widget
+
+
+def select_config(
+    btrack_widget: Container,
+    configs: TrackerConfigs,
+    new_config_name: str,
+) -> None:
+    """Set widget values from a newly-selected base config"""
+
+    # first update the previous config with the current widget values
+    previous_config_name = configs.current_config
+    previous_config = configs[previous_config_name]
+    previous_config = napari_btrack.sync.update_config_from_widgets(
+        unscaled_config=previous_config,
+        container=btrack_widget,
+    )
+
+    # now load the newly-selected config and set widget values
+    new_config_name = btrack.config_selector.current_choice
+    configs.current_config = new_config_name
+    new_config = configs[new_config_name]
+    new_config = napari_btrack.sync.update_widgets_from_config(
+        unscaled_config=new_config,
+        container=btrack_widget,
+    )
+
+
+def run(btrack_widget: Container, configs: TrackerConfigs) -> None:
+    """
+    Update the TrackerConfig from widget values, run tracking,
+    and add tracks to the viewer.
+    """
+
+    unscaled_config = configs[btrack_widget.config_selector.current_choice]
+    unscaled_config = napari_btrack.sync.update_config_from_widgets(
+        unscaled_config=unscaled_config,
+        container=btrack_widget,
+    )
+
+    config = unscaled_config.scale_config()
+    segmentation = btrack_widget.segmentation_selector.value
+    data, properties, graph = _run_tracker(segmentation, config)
+
+    btrack_widget.viewer.add_tracks(
+        data=data,
+        properties=properties,
+        graph=graph,
+        name=f"{segmentation}_btrack",
+    )
 
 
 def _run_tracker(
@@ -165,3 +141,53 @@ def _run_tracker(
         # get the tracks in a format for napari visualization
         data, properties, graph = tracker.to_napari(ndim=2)
         return data, properties, graph
+
+
+def restore_defaults(btrack_widget: Container, configs: TrackerConfigs) -> None:
+    """Reload the config file then set widgets to the config's default values."""
+
+    config_name = configs.current_config
+    filename = configs[config_name].filename
+    configs.add_config(
+        filename=filename,
+        overwrite=True,
+        name=config_name,
+    )
+
+    config = configs[config_name]
+    config = napari_btrack.sync.update_widgets_from_config(
+        unscaled_config=config,
+        container=btrack_widget,
+    )
+
+
+def save_config_to_json(btrack_widget: Container, configs: TrackerConfigs) -> None:
+    """Save widget values to file"""
+
+    save_path = napari_btrack.widgets.save_path_dialogue_box()
+    if save_path is None:
+        # user has cancelled
+        return
+
+    unscaled_config = configs[btrack_widget.config_selector.current_choice]
+    napari_btrack.sync.update_config_from_widgets(
+        unscaled_config=unscaled_config,
+        container=btrack_widget,
+    )
+    config = unscaled_config.scale_config()
+
+    btrack.config.save_config(save_path, config)
+
+
+def load_config_from_json(btrack_widget: Container, configs: TrackerConfigs) -> None:
+    """Load a config from file and set it as the selected base config"""
+
+    load_path = napari_btrack.widgets.load_path_dialogue_box()
+    if load_path is None:
+        # user has cancelled
+        return
+
+    config_name = configs.add_config(filename=load_path, overwrite=False)
+    btrack_widget.config_selector.options["choices"].append(config_name)
+    btrack_widget.config_selector.reset_choices()
+    btrack_widget.config_selector.value = config_name

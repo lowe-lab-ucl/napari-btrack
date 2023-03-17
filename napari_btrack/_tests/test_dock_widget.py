@@ -66,10 +66,8 @@ def test_save_button(track_widget):
     triggers a call to btrack.config.save_config with expected arguments.
     """
 
-    current_config_name = track_widget.unscaled_configs.current_config
-    expected_config = (
-        track_widget.unscaled_configs[current_config_name].scale_config().json()
-    )
+    unscaled_config = napari_btrack.config.UnscaledTackerConfig(cell_config())
+    expected_config = unscaled_config.scale_config().json()
 
     with patch(
         "napari_btrack.widgets.save_path_dialogue_box"
@@ -86,9 +84,7 @@ def test_save_button(track_widget):
 def test_load_config(track_widget):
     """Tests that another TrackerConfig can be loaded."""
 
-    all_configs = track_widget.unscaled_configs  # 2 configs loaded by default
-    n_original_configs = len(all_configs.configs)
-    original_config_name = all_configs.current_config
+    original_config_name = track_widget.config_selector.current_choice
 
     with patch(
         "napari_btrack.widgets.load_path_dialogue_box"
@@ -96,11 +92,8 @@ def test_load_config(track_widget):
         load_path_dialogue_box.return_value = cell_config()
         track_widget.load_config_button.clicked()
 
-    n_expected_configs = n_original_configs + 1
-    n_actual_configs = len(all_configs.configs)
-    new_config_name = all_configs.current_config
+    new_config_name = track_widget.config_selector.current_choice
 
-    assert n_expected_configs == n_actual_configs  # noqa: S101
     assert track_widget.config_selector.value == "Default"  # noqa: S101
     assert new_config_name != original_config_name  # noqa: S101
 
@@ -108,10 +101,8 @@ def test_load_config(track_widget):
 def test_reset_button(track_widget):
     """Tests that clicking the reset button restores the default config values"""
 
-    current_config_name = track_widget.unscaled_configs.current_config
-    expected_config = (
-        track_widget.unscaled_configs[current_config_name].scale_config().json()
-    )
+    original_max_search_radius = track_widget.max_search_radius.value
+    original_relax = track_widget.relax.value
 
     # change some widget values
     track_widget.max_search_radius.value += 10
@@ -119,12 +110,12 @@ def test_reset_button(track_widget):
 
     # click reset button - restores defaults of the currently-selected base config
     track_widget.reset_button.clicked()
-    actual_config = (
-        track_widget.unscaled_configs[current_config_name].scale_config().json()
-    )
 
-    # use json.loads to avoid failure in string comparison because e.g "100.0" != "100"
-    assert json.loads(actual_config) == json.loads(expected_config)  # noqa: S101
+    new_max_search_radius = track_widget.max_search_radius.value
+    new_relax = track_widget.relax.value
+
+    assert new_max_search_radius == original_max_search_radius  # noqa: S101
+    assert new_relax == original_relax  # noqa: S101s
 
 
 @pytest.fixture
