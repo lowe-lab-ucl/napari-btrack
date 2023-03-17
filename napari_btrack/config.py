@@ -14,8 +14,7 @@ import numpy as np
 from btrack import datasets
 
 __all__ = [
-    "UnscaledTackerConfig",
-    "TrackerConfigs",
+    "create_default_configs",
 ]
 
 
@@ -133,3 +132,13 @@ class TrackerConfigs:
         self.configs[config_name] = config
 
         return config_name
+
+
+def create_default_configs():
+    """Create a set of default configurations"""
+
+    # TrackerConfigs automatically loads default cell and particle configs
+    configs = TrackerConfigs()
+    configs["cell"]
+
+    return configs

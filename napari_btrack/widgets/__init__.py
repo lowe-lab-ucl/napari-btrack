@@ -1,9 +1,5 @@
-from napari_btrack.widgets.general import (
-    create_control_widgets,
-    create_input_widgets,
-    create_update_method_widgets,
+from napari_btrack.widgets.create_ui import create_widgets
+from napari_btrack.widgets.io import (
     load_path_dialogue_box,
     save_path_dialogue_box,
 )
-from napari_btrack.widgets.hypothesis import create_hypothesis_model_widgets
-from napari_btrack.widgets.motion import create_motion_model_widgets
