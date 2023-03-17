@@ -156,12 +156,8 @@ def update_widgets_from_config(
     return container
 
 
-def track() -> Container:  # noqa: PLR0915
-    """Create widgets for the btrack plugin."""
-
-    # TrackerConfigs automatically loads default cell and particle configs
-    all_configs = napari_btrack.config.TrackerConfigs()
-    all_configs["cell"]
+def _create_widgets():
+    """Create all the widgets for the plugin"""
 
     input_widgets = napari_btrack.widgets.create_input_widgets()
     update_method_widgets = napari_btrack.widgets.create_update_method_widgets()
@@ -169,7 +165,7 @@ def track() -> Container:  # noqa: PLR0915
     hypothesis_model_widgets = napari_btrack.widgets.create_hypothesis_model_widgets()
     control_buttons = napari_btrack.widgets.create_control_widgets()
 
-    widgets: list = [
+    widgets = [
         *input_widgets,
         *update_method_widgets,
         *motion_model_widgets,
@@ -177,12 +173,33 @@ def track() -> Container:  # noqa: PLR0915
         *control_buttons,
     ]
 
+    return widgets
+
+
+def _create_default_configs():
+    """Create a set of default configurations for the plugin"""
+
+    # TrackerConfigs automatically loads default cell and particle configs
+    configs = napari_btrack.config.TrackerConfigs()
+    configs["cell"]
+
+    return configs
+
+
+def track() -> Container:
+    """Create widgets for the btrack plugin."""
+
+    # First create our UI along with some default configs for the widgets
+    all_configs = _create_default_configs()
+    widgets = _create_widgets()
+
     btrack_widget = magicgui.widgets.Container(widgets=widgets, scrollable=True)
     btrack_widget.viewer = napari.current_viewer()
     btrack_widget.unscaled_configs = all_configs
 
+    # Now set the callbacks
     @btrack_widget.config_selector.changed.connect
-    def select_config() -> None:
+    def select_config():
         """Set widget values from a newly-selected base config"""
 
         # first update the previous config with the current widget values
