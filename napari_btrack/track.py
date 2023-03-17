@@ -7,8 +7,6 @@ if TYPE_CHECKING:
     from btrack.config import TrackerConfig
     from magicgui.widgets import Container
 
-    from napari_btrack.config import UnscaledTackerConfig
-
 import btrack
 import magicgui.widgets
 import napari
@@ -16,6 +14,7 @@ import qtpy.QtWidgets
 from btrack.utils import segmentation_to_objects
 
 import napari_btrack.config
+import napari_btrack.sync
 import napari_btrack.widgets
 
 __all__ = [
@@ -53,107 +52,6 @@ def run_tracker(
         # get the tracks in a format for napari visualization
         data, properties, graph = tracker.to_napari(ndim=2)
         return data, properties, graph
-
-
-def update_config_from_widgets(
-    unscaled_config: UnscaledTackerConfig,
-    container: Container,
-):
-    """Update an UnscaledTrackerConfig with the current widget values."""
-
-    sigmas = unscaled_config.sigmas
-    sigmas.P = container.P_sigma.value
-    sigmas.G = container.G_sigma.value
-    sigmas.R = container.R_sigma.value
-
-    config = unscaled_config.tracker_config
-    config.update_method = (
-        container.update_method_selector._widget._qwidget.currentIndex()
-    )
-    config.max_search_radius = container.max_search_radius.value
-
-    motion_model = config.motion_model
-    motion_model.accuracy = container.accuracy.value
-    motion_model.max_lost = container.max_lost.value
-
-    hypothesis_model = config.hypothesis_model
-    hypotheses = []
-    for hypothesis in [
-        "P_FP",
-        "P_init",
-        "P_term",
-        "P_link",
-        "P_branch",
-        "P_dead",
-        "P_merge",
-    ]:
-        if container[hypothesis].value:
-            hypotheses.append(hypothesis)
-    hypothesis_model.hypotheses = hypotheses
-
-    hypothesis_model.lambda_time = container.lambda_time.value
-    hypothesis_model.lambda_dist = container.lambda_dist.value
-    hypothesis_model.lambda_link = container.lambda_link.value
-    hypothesis_model.lambda_branch = container.lambda_branch.value
-
-    hypothesis_model.theta_dist = container.theta_dist.value
-    hypothesis_model.theta_time = container.theta_time.value
-    hypothesis_model.dist_thresh = container.dist_thresh.value
-    hypothesis_model.time_thresh = container.time_thresh.value
-    hypothesis_model.apop_thresh = container.apop_thresh.value
-
-    hypothesis_model.segmentation_miss_rate = container.segmentation_miss_rate.value
-
-
-def update_widgets_from_config(
-    unscaled_config: UnscaledTackerConfig,
-    container: Container,
-):
-    """
-    Update the widgets in a container with the values in an
-    UnscaledTrackerConfig.
-    """
-
-    sigmas = unscaled_config.sigmas
-    container.P_sigma.value = sigmas.P
-    container.G_sigma.value = sigmas.G
-    container.R_sigma.value = sigmas.R
-
-    config = unscaled_config.tracker_config
-    container.update_method_selector.value = config.update_method.name
-    container.max_search_radius.value = config.max_search_radius
-
-    motion_model = config.motion_model
-    container.accuracy.value = motion_model.accuracy
-    container.max_lost.value = motion_model.max_lost
-
-    hypothesis_model = config.hypothesis_model
-    for hypothesis in [
-        "P_FP",
-        "P_init",
-        "P_term",
-        "P_link",
-        "P_branch",
-        "P_dead",
-        "P_merge",
-    ]:
-        is_checked = hypothesis in hypothesis_model.hypotheses
-        container[hypothesis].value = is_checked
-
-    container.lambda_time.value = hypothesis_model.lambda_time
-    container.lambda_dist.value = hypothesis_model.lambda_dist
-    container.lambda_link.value = hypothesis_model.lambda_link
-    container.lambda_branch.value = hypothesis_model.lambda_branch
-
-    container.theta_dist.value = hypothesis_model.theta_dist
-    container.theta_time.value = hypothesis_model.theta_time
-    container.dist_thresh.value = hypothesis_model.dist_thresh
-    container.time_thresh.value = hypothesis_model.time_thresh
-    container.apop_thresh.value = hypothesis_model.apop_thresh
-
-    container.segmentation_miss_rate.value = hypothesis_model.segmentation_miss_rate
-
-    return container
 
 
 def _create_widgets():
@@ -204,15 +102,18 @@ def track() -> Container:
 
         # first update the previous config with the current widget values
         previous_config_name = all_configs.current_config
-        update_config_from_widgets(
-            unscaled_config=all_configs[previous_config_name],
+        previous_config = all_configs[previous_config_name]
+        previous_config = napari_btrack.sync.update_config_from_widgets(
+            unscaled_config=previous_config,
             container=btrack_widget,
         )
+
         # now load the newly-selected config and set widget values
         new_config_name = btrack_widget.config_selector.value
         all_configs.current_config = new_config_name
-        update_widgets_from_config(
-            unscaled_config=all_configs[new_config_name],
+        new_config = all_configs[new_config_name]
+        new_config = napari_btrack.sync.update_widgets_from_config(
+            unscaled_config=new_config,
             container=btrack_widget,
         )
 
@@ -224,7 +125,7 @@ def track() -> Container:
         """
 
         unscaled_config = all_configs[btrack_widget.config_selector.current_choice]
-        update_config_from_widgets(
+        unscaled_config = napari_btrack.sync.update_config_from_widgets(
             unscaled_config=unscaled_config,
             container=btrack_widget,
         )
@@ -251,8 +152,9 @@ def track() -> Container:
             overwrite=True,
         )
 
-        update_widgets_from_config(
-            unscaled_config=all_configs[config_name],
+        config = all_configs[config_name]
+        config = napari_btrack.sync.update_widgets_from_config(
+            unscaled_config=config,
             container=btrack_widget,
         )
 
@@ -266,7 +168,7 @@ def track() -> Container:
             return
 
         unscaled_config = all_configs[btrack_widget.config_selector.current_choice]
-        update_config_from_widgets(
+        napari_btrack.sync.update_config_from_widgets(
             unscaled_config=unscaled_config,
             container=btrack_widget,
         )

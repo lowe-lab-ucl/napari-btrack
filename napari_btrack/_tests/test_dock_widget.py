@@ -17,6 +17,7 @@ from btrack import datasets
 from btrack.datasets import cell_config, particle_config
 
 import napari_btrack
+import napari_btrack.track
 
 OLD_WIDGET_LAYERS = 1
 NEW_WIDGET_LAYERS = 2
@@ -51,8 +52,8 @@ def test_config_to_widgets_round_trip(track_widget, config):
     expected_config = btrack.config.load_config(config).json()
 
     unscaled_config = napari_btrack.config.UnscaledTackerConfig(config)
-    napari_btrack.track.update_widgets_from_config(unscaled_config, track_widget)
-    napari_btrack.track.update_config_from_widgets(unscaled_config, track_widget)
+    napari_btrack.sync.update_widgets_from_config(unscaled_config, track_widget)
+    napari_btrack.sync.update_config_from_widgets(unscaled_config, track_widget)
 
     actual_config = unscaled_config.scale_config().json()
 
