@@ -1,15 +1,17 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from btrack.config import TrackerConfig
+
 import copy
 import os
 from dataclasses import dataclass, field
 
+import btrack
 import numpy as np
 from btrack import datasets
-from btrack.config import (
-    TrackerConfig,
-    load_config,
-)
 
 __all__ = [
     "UnscaledTackerConfig",
@@ -41,7 +43,7 @@ class UnscaledTackerConfig:
     def __post_init__(self):
         """Create the TrackerConfig and un-scale the MotionModel indices"""
 
-        config = load_config(self.filename)
+        config = btrack.config.load_config(self.filename)
         self.tracker_config, self.sigmas = self._unscale_config(config)
 
     def _unscale_config(self, config: TrackerConfig) -> tuple[TrackerConfig, Sigmas]:

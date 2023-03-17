@@ -358,45 +358,6 @@ def _create_hypothesis_model_widgets(tracker_config: UnscaledTackerConfig):
     return hypothesis_model_widgets
 
 
-def _create_control_widgets():
-    """Create widgets for running the analysis or handling I/O.
-
-    This includes widgets for running the tracking, saving and loading
-    configuration files, and resetting the widget values to those in
-    the selected config."""
-
-    names = [
-        "load_config_button",
-        "save_config_button",
-        "reset_button",
-        "call_button",
-    ]
-    labels = [
-        "Load configuration",
-        "Save configuration",
-        "Reset defaults",
-        "Run",
-    ]
-    tooltips = [
-        "Load a TrackerConfig json file.",
-        "Export the current configuration to a TrackerConfig json file.",
-        "Reset the current configuration to the defaults of the base config.",
-        "Run the tracking analysis with the current configuration.",
-    ]
-
-    control_buttons = []
-    for name, label, tooltip in zip(names, labels, tooltips):
-        widget = create_widget(
-            name=name,
-            label=label,
-            widget_type="PushButton",
-            options={"tooltip": tooltip},
-        )
-        control_buttons.append(widget)
-
-    return control_buttons
-
-
 def update_config_from_widgets(
     unscaled_config: UnscaledTackerConfig,
     container: Container,
@@ -495,6 +456,8 @@ def update_widgets_from_config(
 
     container.segmentation_miss_rate.value = hypothesis_model.segmentation_miss_rate
 
+    return container
+
 
 def track() -> Container:  # noqa: PLR0915
     """Create widgets for the btrack plugin."""
@@ -513,7 +476,7 @@ def track() -> Container:  # noqa: PLR0915
     hypothesis_model_widgets = _create_hypothesis_model_widgets(
         tracker_config=current_config,
     )
-    control_buttons = _create_control_widgets()
+    control_buttons = napari_btrack.widgets.create_control_widgets()
 
     widgets: list = [
         *input_widgets,

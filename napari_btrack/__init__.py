@@ -3,6 +3,8 @@ try:
 except ImportError:
     __version__ = "unknown"
 
+from napari_btrack import track
+
 __all__ = [
     "track",
 ]

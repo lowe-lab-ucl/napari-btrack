@@ -1,23 +1,22 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from magicgui.widgets import Container
+
 import json
 from unittest.mock import patch
 
+import btrack
 import napari
 import numpy as np
 import numpy.typing as npt
 import pytest
 from btrack import datasets
-from btrack.config import load_config
 from btrack.datasets import cell_config, particle_config
-from magicgui.widgets import Container
 
-from napari_btrack.config import UnscaledTackerConfig
-from napari_btrack.track import (
-    track,
-    update_config_from_widgets,
-    update_widgets_from_config,
-)
+import napari_btrack
 
 OLD_WIDGET_LAYERS = 1
 NEW_WIDGET_LAYERS = 2
@@ -40,7 +39,7 @@ def test_add_widget(make_napari_viewer):
 def track_widget(make_napari_viewer) -> Container:
     """Provides an instance of the track widget to test"""
     make_napari_viewer()  # make sure there is a viewer available
-    return track()
+    return napari_btrack.track.track()
 
 
 @pytest.mark.parametrize("config", [cell_config(), particle_config()])
@@ -49,11 +48,12 @@ def test_config_to_widgets_round_trip(track_widget, config):
     config objects and widgets works as expected.
     """
 
-    expected_config = load_config(config).json()
+    expected_config = btrack.config.load_config(config).json()
 
-    unscaled_config = UnscaledTackerConfig(config)
-    update_widgets_from_config(unscaled_config, track_widget)
-    update_config_from_widgets(unscaled_config, track_widget)
+    unscaled_config = napari_btrack.config.UnscaledTackerConfig(config)
+    napari_btrack.track.update_widgets_from_config(unscaled_config, track_widget)
+    napari_btrack.track.update_config_from_widgets(unscaled_config, track_widget)
+
     actual_config = unscaled_config.scale_config().json()
 
     # use json.loads to avoid failure in string comparison because e.g "100.0" != "100"
@@ -76,7 +76,7 @@ def test_save_button(track_widget):
         save_path_dialogue_box.return_value = "user_config.json"
         track_widget.save_config_button.clicked()
 
-    actual_config = load_config("user_config.json").json()
+    actual_config = btrack.config.load_config("user_config.json").json()
 
     # use json.loads to avoid failure in string comparison because e.g "100.0" != "100"
     assert json.loads(expected_config) == json.loads(actual_config)  # noqa: S101

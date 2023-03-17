@@ -108,3 +108,42 @@ def create_update_method_widgets(tracker_config: UnscaledTackerConfig):
     update_method_widgets = [update_method_selector, max_search_radius]
 
     return update_method_widgets
+
+
+def create_control_widgets():
+    """Create widgets for running the analysis or handling I/O.
+
+    This includes widgets for running the tracking, saving and loading
+    configuration files, and resetting the widget values to those in
+    the selected config."""
+
+    names = [
+        "load_config_button",
+        "save_config_button",
+        "reset_button",
+        "call_button",
+    ]
+    labels = [
+        "Load configuration",
+        "Save configuration",
+        "Reset defaults",
+        "Run",
+    ]
+    tooltips = [
+        "Load a TrackerConfig json file.",
+        "Export the current configuration to a TrackerConfig json file.",
+        "Reset the current configuration to the defaults of the base config.",
+        "Run the tracking analysis with the current configuration.",
+    ]
+
+    control_buttons = []
+    for name, label, tooltip in zip(names, labels, tooltips):
+        widget = magicgui.widgets.create_widget(
+            name=name,
+            label=label,
+            widget_type="PushButton",
+            options={"tooltip": tooltip},
+        )
+        control_buttons.append(widget)
+
+    return control_buttons
