@@ -28,7 +28,7 @@ class Sigmas:
 
 
 @dataclass
-class UnscaledTackerConfig:
+class UnscaledTrackerConfig:
     """Convert TrackerConfig MotionModel matrices from scaled to unscaled.
 
     This is needed because TrackerConfig stores "scaled" matrices, i.e. it
@@ -88,7 +88,7 @@ class UnscaledTackerConfig:
 
 @dataclass
 class TrackerConfigs:
-    configs: dict[str, UnscaledTackerConfig] = field(default_factory=dict)
+    configs: dict[str, UnscaledTrackerConfig] = field(default_factory=dict)
     current_config: str = field(init=False)
 
     def __post_init__(self):
@@ -118,7 +118,7 @@ class TrackerConfigs:
     ) -> str:
         """Load a TrackerConfig and add it to the store."""
 
-        config = UnscaledTackerConfig(filename)
+        config = UnscaledTrackerConfig(filename)
         config_name = name if name is not None else config.tracker_config.name
         config.tracker_config.name = config_name
 

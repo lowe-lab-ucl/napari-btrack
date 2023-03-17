@@ -9,11 +9,11 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from magicgui.widgets import Container
 
-    from napari_btrack.config import UnscaledTackerConfig
+    from napari_btrack.config import UnscaledTrackerConfig
 
 
 def update_config_from_widgets(
-    unscaled_config: UnscaledTackerConfig,
+    unscaled_config: UnscaledTrackerConfig,
     container: Container,
 ):
     """Update an UnscaledTrackerConfig with the current widget values."""
@@ -66,7 +66,7 @@ def update_config_from_widgets(
 
 
 def update_widgets_from_config(
-    unscaled_config: UnscaledTackerConfig,
+    unscaled_config: UnscaledTrackerConfig,
     container: Container,
 ):
     """
