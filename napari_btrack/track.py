@@ -11,14 +11,11 @@ from btrack.utils import segmentation_to_objects
 from magicgui.widgets import Container, create_widget
 from qtpy.QtWidgets import QScrollArea
 
+import napari_btrack.widgets
 from napari_btrack.config import (
     Sigmas,
     TrackerConfigs,
     UnscaledTackerConfig,
-)
-from napari_btrack.widgets import (
-    load_path_dialogue_box,
-    save_path_dialogue_box,
 )
 
 __all__ = [
@@ -56,76 +53,6 @@ def run_tracker(
         # get the tracks in a format for napari visualization
         data, properties, graph = tracker.to_napari(ndim=2)
         return data, properties, graph
-
-
-def _create_input_widgets():
-    """Create widgets for selecting labels layer and TrackerConfig"""
-
-    tooltip = (
-        "Select a 'Labels' layer to use for tracking.\n"
-        "To use an 'Image' layer, first convert 'Labels' by right-clicking "
-        "on it in the layers list, and clicking on 'Convert to Labels'"
-    )
-    segmentation_selector = create_widget(
-        annotation=napari.layers.Labels,
-        name="segmentation_selector",
-        label="segmentation",
-        options={"tooltip": tooltip},
-    )
-
-    tooltip = "Select a loaded configuration.\nNote, this will update values set below."
-    config_selector = create_widget(
-        value="cell",
-        name="config_selector",
-        label="base config",
-        widget_type="ComboBox",
-        options={
-            "choices": ["cell", "particle"],
-            "tooltip": tooltip,
-        },
-    )
-
-    input_widgets = [segmentation_selector, config_selector]
-
-    return input_widgets
-
-
-def _create_update_method_widgets(tracker_config: UnscaledTackerConfig):
-    """Create widgets for selecting the update method"""
-
-    tooltip = (
-        "Select the update method.\n"
-        "EXACT: exact calculation of Bayesian belief matrix.\n"
-        "APPROXIMATE: approximate the Bayesian belief matrix. Useful for datasets with "
-        "more than 1000 particles per frame."
-    )
-    update_method_selector = create_widget(
-        value="EXACT",
-        name="update_method_selector",
-        label="update method",
-        widget_type="ComboBox",
-        options={
-            "choices": ["EXACT", "APPROXIMATE"],
-            "tooltip": tooltip,
-        },
-    )
-
-    # TODO: this widget should be hidden when the update method is set to EXACT
-    tooltip = (
-        "The local spatial search radius (isotropic, pixels) used when the update "
-        "method is 'APPROXIMATE'"
-    )
-    max_search_radius = create_widget(
-        value=tracker_config.tracker_config.max_search_radius,
-        name="max_search_radius",
-        label="search radius",
-        widget_type="SpinBox",
-        options={"tooltip": tooltip},
-    )
-
-    update_method_widgets = [update_method_selector, max_search_radius]
-
-    return update_method_widgets
 
 
 def _make_label_bold(label: str) -> str:
@@ -576,8 +503,8 @@ def track() -> Container:  # noqa: PLR0915
     all_configs = TrackerConfigs()
     current_config = all_configs["cell"]
 
-    input_widgets = _create_input_widgets()
-    update_method_widgets = _create_update_method_widgets(
+    input_widgets = napari_btrack.widgets.create_input_widgets()
+    update_method_widgets = napari_btrack.widgets.create_update_method_widgets(
         tracker_config=current_config,
     )
     motion_model_widgets = _create_motion_model_widgets(
@@ -662,7 +589,7 @@ def track() -> Container:  # noqa: PLR0915
     def save_config_to_json() -> None:
         """Save widget values to file"""
 
-        save_path = save_path_dialogue_box()
+        save_path = napari_btrack.widgets.save_path_dialogue_box()
         if save_path is None:
             # user has cancelled
             return
@@ -680,7 +607,7 @@ def track() -> Container:  # noqa: PLR0915
     def load_config_from_json() -> None:
         """Load a config from file and set it as the selected base config"""
 
-        load_path = load_path_dialogue_box()
+        load_path = napari_btrack.widgets.load_path_dialogue_box()
         if load_path is None:
             # user has cancelled
             return

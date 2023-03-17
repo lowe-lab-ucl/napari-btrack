@@ -70,7 +70,9 @@ def test_save_button(track_widget):
         track_widget.unscaled_configs[current_config_name].scale_config().json()
     )
 
-    with patch("napari_btrack.track.save_path_dialogue_box") as save_path_dialogue_box:
+    with patch(
+        "napari_btrack.widgets.save_path_dialogue_box"
+    ) as save_path_dialogue_box:
         save_path_dialogue_box.return_value = "user_config.json"
         track_widget.save_config_button.clicked()
 
@@ -87,7 +89,9 @@ def test_load_config(track_widget):
     n_original_configs = len(all_configs.configs)
     original_config_name = all_configs.current_config
 
-    with patch("napari_btrack.track.load_path_dialogue_box") as load_path_dialogue_box:
+    with patch(
+        "napari_btrack.widgets.load_path_dialogue_box"
+    ) as load_path_dialogue_box:
         load_path_dialogue_box.return_value = cell_config()
         track_widget.load_config_button.clicked()
 
