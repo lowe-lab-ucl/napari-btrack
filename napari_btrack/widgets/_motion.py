@@ -11,7 +11,7 @@ def _make_label_bold(label: str) -> str:
 
 
 def _create_sigma_widgets():
-    """Create widgest for setting the magnitudes of the MotionModel matrices"""
+    """Create widgets for setting the magnitudes of the MotionModel matrices"""
 
     tooltip = "Magnitude of error in initial estimates.\n Used to scale the matrix P."
     P_sigma = magicgui.widgets.create_widget(
