@@ -1,21 +1,22 @@
 from __future__ import annotations
 
-import btrack
-import napari
-import numpy.typing as npt
-from btrack.config import (
-    TrackerConfig,
-    save_config,
-)
-from btrack.utils import segmentation_to_objects
-from magicgui.widgets import Container
-from qtpy.QtWidgets import QScrollArea
+from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    import numpy.typing as npt
+    from btrack.config import TrackerConfig
+    from magicgui.widgets import Container
+
+    from napari_btrack.config import UnscaledTackerConfig
+
+import btrack
+import magicgui.widgets
+import napari
+import qtpy.QtWidgets
+from btrack.utils import segmentation_to_objects
+
+import napari_btrack.config
 import napari_btrack.widgets
-from napari_btrack.config import (
-    TrackerConfigs,
-    UnscaledTackerConfig,
-)
 
 __all__ = [
     "track",
@@ -159,7 +160,7 @@ def track() -> Container:  # noqa: PLR0915
     """Create widgets for the btrack plugin."""
 
     # TrackerConfigs automatically loads default cell and particle configs
-    all_configs = TrackerConfigs()
+    all_configs = napari_btrack.config.TrackerConfigs()
     all_configs["cell"]
 
     input_widgets = napari_btrack.widgets.create_input_widgets()
@@ -176,7 +177,7 @@ def track() -> Container:  # noqa: PLR0915
         *control_buttons,
     ]
 
-    btrack_widget = Container(widgets=widgets, scrollable=True)
+    btrack_widget = magicgui.widgets.Container(widgets=widgets, scrollable=True)
     btrack_widget.viewer = napari.current_viewer()
     btrack_widget.unscaled_configs = all_configs
 
@@ -254,7 +255,7 @@ def track() -> Container:  # noqa: PLR0915
         )
         config = unscaled_config.scale_config()
 
-        save_config(save_path, config)
+        btrack.config.save_config(save_path, config)
 
     @btrack_widget.load_config_button.changed.connect
     def load_config_from_json() -> None:
@@ -270,7 +271,7 @@ def track() -> Container:  # noqa: PLR0915
         btrack_widget.config_selector.reset_choices()
         btrack_widget.config_selector.value = config_name
 
-    scroll = QScrollArea()
+    scroll = qtpy.QtWidgets.QScrollArea()
     scroll.setWidget(btrack_widget._widget._qwidget)
     btrack_widget._widget._qwidget = scroll
 
