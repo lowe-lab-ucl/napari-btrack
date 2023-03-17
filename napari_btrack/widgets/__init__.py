@@ -5,3 +5,4 @@ from napari_btrack.widgets.general import (
     load_path_dialogue_box,
     save_path_dialogue_box,
 )
+from napari_btrack.widgets.hypothesis import create_hypothesis_model_widgets
