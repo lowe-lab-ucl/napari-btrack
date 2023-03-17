@@ -58,16 +58,6 @@ def run_tracker(
         return data, properties, graph
 
 
-def html_label_widget(label: str, tag: str = "b") -> dict:
-    """
-    Create a HMTL label widget.
-    """
-    return {
-        "widget_type": "Label",
-        "label": f"<{tag}>{label}</{tag}>",
-    }
-
-
 def _create_input_widgets():
     """Create widgets for selecting labels layer and TrackerConfig"""
 
