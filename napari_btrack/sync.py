@@ -58,6 +58,7 @@ def update_config_from_widgets(
     hypothesis_model.dist_thresh = container.dist_thresh.value
     hypothesis_model.time_thresh = container.time_thresh.value
     hypothesis_model.apop_thresh = container.apop_thresh.value
+    hypothesis_model.relax = container.relax.value
 
     hypothesis_model.segmentation_miss_rate = container.segmentation_miss_rate.value
 
@@ -109,6 +110,7 @@ def update_widgets_from_config(
     container.dist_thresh.value = hypothesis_model.dist_thresh
     container.time_thresh.value = hypothesis_model.time_thresh
     container.apop_thresh.value = hypothesis_model.apop_thresh
+    container.relax.value = hypothesis_model.relax
 
     container.segmentation_miss_rate.value = hypothesis_model.segmentation_miss_rate
 

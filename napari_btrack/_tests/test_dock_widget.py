@@ -67,6 +67,7 @@ def test_save_button(track_widget):
     """
 
     unscaled_config = napari_btrack.config.UnscaledTackerConfig(cell_config())
+    unscaled_config.tracker_config.name = "cell"  # this is done in in the gui too
     expected_config = unscaled_config.scale_config().json()
 
     with patch(
@@ -82,8 +83,9 @@ def test_save_button(track_widget):
 
 
 def test_load_config(track_widget):
-    """Tests that another TrackerConfig can be loaded."""
+    """Tests that another TrackerConfig can be loaded and made the current config."""
 
+    # this is set to be 'cell' rather than 'Default'
     original_config_name = track_widget.config_selector.current_choice
 
     with patch(
@@ -92,6 +94,7 @@ def test_load_config(track_widget):
         load_path_dialogue_box.return_value = cell_config()
         track_widget.load_config_button.clicked()
 
+    # We didn't override the name, so it should be ''Default
     new_config_name = track_widget.config_selector.current_choice
 
     assert track_widget.config_selector.value == "Default"  # noqa: S101

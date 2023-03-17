@@ -78,7 +78,7 @@ def select_config(
     )
 
     # now load the newly-selected config and set widget values
-    new_config_name = btrack.config_selector.current_choice
+    # new_config_name = btrack_widget.config_selector.current_choice
     configs.current_config = new_config_name
     new_config = configs[new_config_name]
     new_config = napari_btrack.sync.update_widgets_from_config(
