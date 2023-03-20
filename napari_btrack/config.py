@@ -139,6 +139,5 @@ def create_default_configs():
 
     # TrackerConfigs automatically loads default cell and particle configs
     configs = TrackerConfigs()
-    configs["cell"]
 
     return configs
