@@ -49,7 +49,7 @@ def _create_hypotheses_widgets() -> list[Widget]:
 def _create_scaling_factor_widgets() -> list[Widget]:
     """Create widgets for setting the scaling factors of the HypothesisModel"""
 
-    values = [5.0, 3.0, 10.0, 50.0]
+    widget_values = [5.0, 3.0, 10.0, 50.0]
     names = [
         "lambda_time",
         "lambda_dist",
@@ -70,7 +70,7 @@ def _create_scaling_factor_widgets() -> list[Widget]:
     ]
 
     scaling_factor_widgets = []
-    for value, name, label, tooltip in zip(values, names, labels, tooltips):
+    for value, name, label, tooltip in zip(widget_values, names, labels, tooltips):
         widget = magicgui.widgets.create_widget(
             value=value,
             name=name,
