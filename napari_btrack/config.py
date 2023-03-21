@@ -94,12 +94,12 @@ class TrackerConfigs:
     def __post_init__(self):
         """Add the default cell and particle configs."""
 
-        _ = self.add_config(
+        self.add_config(
             filename=datasets.cell_config(),
             name="cell",
             overwrite=False,
         )
-        _ = self.add_config(
+        self.add_config(
             filename=datasets.particle_config(),
             name="particle",
             overwrite=False,
