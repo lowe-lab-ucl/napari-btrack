@@ -19,7 +19,7 @@ def _create_hypotheses_widgets() -> list[Widget]:
         "Hypothesis that a tracklet starts at the beginning of the movie or edge of the field of view.",  # noqa: E501
         "Hypothesis that a tracklet ends at the end of the movie or edge of the field of view.",  # noqa: E501
         "Hypothesis that two tracklets should be linked together.",
-        "Hypothesis that a tracklet can split onto two daughter tracklets.",
+        "Hypothesis that a tracklet can split into two daughter tracklets.",
         "Hypothesis that a tracklet terminates without leaving the field of view.",
         "Hypothesis that two tracklets merge into one tracklet.",
     ]
