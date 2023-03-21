@@ -12,7 +12,7 @@ import napari
 def create_input_widgets() -> list[Widget]:
     """Create widgets for selecting labels layer and TrackerConfig"""
 
-    tooltip = (
+    segmentation_tooltip = (
         "Select a 'Labels' layer to use for tracking.\n"
         "To use an 'Image' layer, first convert 'Labels' by right-clicking "
         "on it in the layers list, and clicking on 'Convert to Labels'"
@@ -21,10 +21,12 @@ def create_input_widgets() -> list[Widget]:
         annotation=napari.layers.Labels,
         name="segmentation",
         label="segmentation",
-        options={"tooltip": tooltip},
+        options={"tooltip": segmentation_tooltip},
     )
 
-    tooltip = "Select a loaded configuration.\nNote, this will update values set below."
+    config_tooltip = (
+        "Select a loaded configuration.\nNote, this will update values set below."
+    )
     config = magicgui.widgets.create_widget(
         value="cell",
         name="config",
@@ -32,7 +34,7 @@ def create_input_widgets() -> list[Widget]:
         widget_type="ComboBox",
         options={
             "choices": ["cell", "particle"],
-            "tooltip": tooltip,
+            "tooltip": config_tooltip,
         },
     )
 
@@ -42,7 +44,7 @@ def create_input_widgets() -> list[Widget]:
 def create_update_method_widgets() -> list[Widget]:
     """Create widgets for selecting the update method"""
 
-    tooltip = (
+    update_method_tooltip = (
         "Select the update method.\n"
         "EXACT: exact calculation of Bayesian belief matrix.\n"
         "APPROXIMATE: approximate the Bayesian belief matrix. Useful for datasets with "
@@ -55,12 +57,12 @@ def create_update_method_widgets() -> list[Widget]:
         widget_type="ComboBox",
         options={
             "choices": ["EXACT", "APPROXIMATE"],
-            "tooltip": tooltip,
+            "tooltip": update_method_tooltip,
         },
     )
 
     # TODO: this widget should be hidden when the update method is set to EXACT
-    tooltip = (
+    max_search_radius_tooltip = (
         "The local spatial search radius (isotropic, pixels) used when the update "
         "method is 'APPROXIMATE'"
     )
@@ -69,7 +71,7 @@ def create_update_method_widgets() -> list[Widget]:
         name="max_search_radius",
         label="search radius",
         widget_type="SpinBox",
-        options={"tooltip": tooltip},
+        options={"tooltip": max_search_radius_tooltip},
     )
 
     return [update_method, max_search_radius]

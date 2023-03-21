@@ -86,7 +86,7 @@ def _create_scaling_factor_widgets() -> list[Widget]:
 def _create_threshold_widgets() -> list[Widget]:
     """Create widgets for setting thresholds for the HypothesisModel"""
 
-    tooltip = (
+    distance_threshold_tooltip = (
         "A threshold distance from the edge of the field of view to add an "
         "initialization or termination hypothesis."
     )
@@ -95,10 +95,10 @@ def _create_threshold_widgets() -> list[Widget]:
         name="theta_dist",
         label="distance threshold",
         widget_type="FloatSpinBox",
-        options={"tooltip": tooltip},
+        options={"tooltip": distance_threshold_tooltip},
     )
 
-    tooltip = (
+    time_threshold_tooltip = (
         "A threshold time from the beginning or end of movie to add "
         "an initialization or termination hypothesis."
     )
@@ -107,10 +107,10 @@ def _create_threshold_widgets() -> list[Widget]:
         name="theta_time",
         label="time threshold",
         widget_type="FloatSpinBox",
-        options={"tooltip": tooltip},
+        options={"tooltip": time_threshold_tooltip},
     )
 
-    tooltip = (
+    apoptosis_threshold_tooltip = (
         "Number of apoptotic detections to be considered a genuine event.\n"
         "Detections are counted consecutively from the back of the track"
     )
@@ -119,7 +119,7 @@ def _create_threshold_widgets() -> list[Widget]:
         name="apop_thresh",
         label="apoptosis threshold",
         widget_type="SpinBox",
-        options={"tooltip": tooltip},
+        options={"tooltip": apoptosis_threshold_tooltip},
     )
 
     return [
@@ -132,7 +132,7 @@ def _create_threshold_widgets() -> list[Widget]:
 def _create_bin_size_widgets() -> list[Widget]:
     """Create widget for setting bin sizes for the HypothesisModel"""
 
-    tooltip = (
+    distance_bin_size_tooltip = (
         "Isotropic spatial bin size for considering hypotheses.\n"
         "Larger bin sizes generate more hypothesese for each tracklet."
     )
@@ -141,10 +141,10 @@ def _create_bin_size_widgets() -> list[Widget]:
         name="dist_thresh",
         label="distance bin size",
         widget_type="FloatSpinBox",
-        options={"tooltip": tooltip},
+        options={"tooltip": distance_bin_size_tooltip},
     )
 
-    tooltip = (
+    time_bin_size_tooltip = (
         "Temporal bin size for considering hypotheses.\n"
         "Larger bin sizes generate more hypothesese for each tracklet."
     )
@@ -153,7 +153,7 @@ def _create_bin_size_widgets() -> list[Widget]:
         name="time_thresh",
         label="time bin size",
         widget_type="FloatSpinBox",
-        options={"tooltip": tooltip},
+        options={"tooltip": time_bin_size_tooltip},
     )
 
     return [
@@ -176,19 +176,19 @@ def create_hypothesis_model_widgets() -> list[Widget]:
     threshold_widgets = _create_threshold_widgets()
     bin_size_widgets = _create_bin_size_widgets()
 
-    tooltip = (
+    segmentation_miss_rate_tooltip = (
         "Miss rate for the segmentation.\n"
         "e.g. 1/100 segmentations incorrect gives a segmentation miss rate of 0.01."
     )
-    segmentation_miss_rate_widget = magicgui.widgets.create_widget(
+    segmentation_miss_rate = magicgui.widgets.create_widget(
         value=0.1,
         name="segmentation_miss_rate",
         label="miss rate",
         widget_type="FloatSpinBox",
-        options={"tooltip": tooltip},
+        options={"tooltip": segmentation_miss_rate_tooltip},
     )
 
-    tooltip = (
+    relax_tooltip = (
         "Disable the time and distance thresholds.\n"
         "This means that tracks can initialize or terminate anywhere and"
         "at any time in the dataset."
@@ -198,7 +198,7 @@ def create_hypothesis_model_widgets() -> list[Widget]:
         name="relax",
         label="relax thresholds",
         widget_type="CheckBox",
-        options={"tooltip": tooltip},
+        options={"tooltip": relax_tooltip},
     )
 
     return [
@@ -207,6 +207,6 @@ def create_hypothesis_model_widgets() -> list[Widget]:
         *scaling_factor_widgets,
         *threshold_widgets,
         *bin_size_widgets,
-        segmentation_miss_rate_widget,
+        segmentation_miss_rate,
         relax,
     ]
