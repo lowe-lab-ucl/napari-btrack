@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from magicgui.widgets import Widget
+
 from napari_btrack.widgets._general import (
     create_control_widgets,
     create_input_widgets,
@@ -7,7 +14,7 @@ from napari_btrack.widgets._hypothesis import create_hypothesis_model_widgets
 from napari_btrack.widgets._motion import create_motion_model_widgets
 
 
-def create_widgets():
+def create_widgets() -> list[Widget]:
     """Create all the widgets for the plugin"""
 
     input_widgets = create_input_widgets()

@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from magicgui.widgets import Widget
+
 import magicgui
 import napari
 
 
-def create_input_widgets():
+def create_input_widgets() -> list[Widget]:
     """Create widgets for selecting labels layer and TrackerConfig"""
 
     tooltip = (
@@ -34,7 +39,7 @@ def create_input_widgets():
     return [segmentation, config]
 
 
-def create_update_method_widgets():
+def create_update_method_widgets() -> list[Widget]:
     """Create widgets for selecting the update method"""
 
     tooltip = (
@@ -70,7 +75,7 @@ def create_update_method_widgets():
     return [update_method, max_search_radius]
 
 
-def create_control_widgets():
+def create_control_widgets() -> list[Widget]:
     """Create widgets for running the analysis or handling I/O.
 
     This includes widgets for running the tracking, saving and loading

@@ -1,7 +1,14 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from magicgui.widgets import Widget
+
 import magicgui
 
 
-def _create_hypotheses_widgets():
+def _create_hypotheses_widgets() -> list[Widget]:
     """Create widgets for selecting which hypotheses to generate."""
 
     hypotheses = [
@@ -45,7 +52,7 @@ def _create_hypotheses_widgets():
     return hypotheses_widgets
 
 
-def _create_scaling_factor_widgets():
+def _create_scaling_factor_widgets() -> list[Widget]:
     """Create widgets for setting the scaling factors of the HypothesisModel"""
 
     values = [5.0, 3.0, 10.0, 50.0]
@@ -82,7 +89,7 @@ def _create_scaling_factor_widgets():
     return scaling_factor_widgets
 
 
-def _create_threshold_widgets():
+def _create_threshold_widgets() -> list[Widget]:
     """Create widgets for setting thresholds for the HypothesisModel"""
 
     tooltip = (
@@ -128,7 +135,7 @@ def _create_threshold_widgets():
     ]
 
 
-def _create_bin_size_widgets():
+def _create_bin_size_widgets() -> list[Widget]:
     """Create widget for setting bin sizes for the HypothesisModel"""
 
     tooltip = (
@@ -161,7 +168,7 @@ def _create_bin_size_widgets():
     ]
 
 
-def create_hypothesis_model_widgets():
+def create_hypothesis_model_widgets() -> list[Widget]:
     """Create widgets for setting parameters of the MotionModel"""
 
     hypothesis_model_label = magicgui.widgets.create_widget(

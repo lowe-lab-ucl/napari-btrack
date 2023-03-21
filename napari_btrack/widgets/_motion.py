@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from magicgui.widgets import Widget
+
 import magicgui
 
 
@@ -9,7 +14,7 @@ def _make_label_bold(label: str) -> str:
     return f"<b>{label}</b>"
 
 
-def _create_sigma_widgets():
+def _create_sigma_widgets() -> list[Widget]:
     """Create widgets for setting the magnitudes of the MotionModel matrices"""
 
     tooltip = "Magnitude of error in initial estimates.\n Used to scale the matrix P."
@@ -46,7 +51,7 @@ def _create_sigma_widgets():
     ]
 
 
-def create_motion_model_widgets():
+def create_motion_model_widgets() -> list[Widget]:
     """Create widgets for setting parameters of the MotionModel"""
 
     motion_model_label = magicgui.widgets.create_widget(
