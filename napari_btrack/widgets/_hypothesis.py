@@ -121,13 +121,11 @@ def _create_threshold_widgets():
         options={"tooltip": tooltip},
     )
 
-    threshold_widgets = [
+    return [
         distance_threshold,
         time_threshold,
         apoptosis_threshold,
     ]
-
-    return threshold_widgets
 
 
 def _create_bin_size_widgets():
@@ -157,12 +155,10 @@ def _create_bin_size_widgets():
         options={"tooltip": tooltip},
     )
 
-    bin_size_widgets = [
+    return [
         distance_bin_size,
         time_bin_size,
     ]
-
-    return bin_size_widgets
 
 
 def create_hypothesis_model_widgets():
@@ -204,7 +200,7 @@ def create_hypothesis_model_widgets():
         options={"tooltip": tooltip},
     )
 
-    hypothesis_model_widgets = [
+    return [
         hypothesis_model_label,
         *hypotheses_widgets,
         *scaling_factor_widgets,
@@ -213,5 +209,3 @@ def create_hypothesis_model_widgets():
         segmentation_miss_rate_widget,
         relax,
     ]
-
-    return hypothesis_model_widgets

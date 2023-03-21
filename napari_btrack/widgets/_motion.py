@@ -75,11 +75,9 @@ def create_motion_model_widgets():
         options={"tooltip": tooltip},
     )
 
-    motion_model_widgets = [
+    return [
         motion_model_label,
         *sigma_widgets,
         accuracy,
         max_lost_frames,
     ]
-
-    return motion_model_widgets

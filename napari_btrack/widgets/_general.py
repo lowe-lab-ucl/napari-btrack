@@ -31,9 +31,7 @@ def create_input_widgets():
         },
     )
 
-    input_widgets = [segmentation_selector, config_selector]
-
-    return input_widgets
+    return [segmentation_selector, config_selector]
 
 
 def create_update_method_widgets():
@@ -69,9 +67,7 @@ def create_update_method_widgets():
         options={"tooltip": tooltip},
     )
 
-    update_method_widgets = [update_method_selector, max_search_radius]
-
-    return update_method_widgets
+    return [update_method_selector, max_search_radius]
 
 
 def create_control_widgets():
