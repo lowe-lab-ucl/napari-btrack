@@ -16,12 +16,10 @@ def create_widgets():
     hypothesis_model_widgets = create_hypothesis_model_widgets()
     control_buttons = create_control_widgets()
 
-    widgets = [
+    return [
         *input_widgets,
         *update_method_widgets,
         *motion_model_widgets,
         *hypothesis_model_widgets,
         *control_buttons,
     ]
-
-    return widgets
