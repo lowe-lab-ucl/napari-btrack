@@ -12,17 +12,17 @@ def create_input_widgets():
         "To use an 'Image' layer, first convert 'Labels' by right-clicking "
         "on it in the layers list, and clicking on 'Convert to Labels'"
     )
-    segmentation_selector = magicgui.widgets.create_widget(
+    segmentation = magicgui.widgets.create_widget(
         annotation=napari.layers.Labels,
-        name="segmentation_selector",
+        name="segmentation",
         label="segmentation",
         options={"tooltip": tooltip},
     )
 
     tooltip = "Select a loaded configuration.\nNote, this will update values set below."
-    config_selector = magicgui.widgets.create_widget(
+    config = magicgui.widgets.create_widget(
         value="cell",
-        name="config_selector",
+        name="config",
         label="config name",
         widget_type="ComboBox",
         options={
@@ -31,7 +31,7 @@ def create_input_widgets():
         },
     )
 
-    return [segmentation_selector, config_selector]
+    return [segmentation, config]
 
 
 def create_update_method_widgets():
@@ -43,9 +43,9 @@ def create_update_method_widgets():
         "APPROXIMATE: approximate the Bayesian belief matrix. Useful for datasets with "
         "more than 1000 particles per frame."
     )
-    update_method_selector = magicgui.widgets.create_widget(
+    update_method = magicgui.widgets.create_widget(
         value="EXACT",
-        name="update_method_selector",
+        name="update_method",
         label="update method",
         widget_type="ComboBox",
         options={
@@ -67,7 +67,7 @@ def create_update_method_widgets():
         options={"tooltip": tooltip},
     )
 
-    return [update_method_selector, max_search_radius]
+    return [update_method, max_search_radius]
 
 
 def create_control_widgets():

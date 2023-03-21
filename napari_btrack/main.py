@@ -34,7 +34,7 @@ def create_btrack_widget() -> Container:
     btrack_widget.viewer = napari.current_viewer()
 
     # Now set the callbacks
-    btrack_widget.config_selector.changed.connect(
+    btrack_widget.config.changed.connect(
         lambda selected: select_config(btrack_widget, all_configs, selected),
     )
 
@@ -78,7 +78,7 @@ def select_config(
     )
 
     # now load the newly-selected config and set widget values
-    # new_config_name = btrack_widget.config_selector.current_choice
+    # new_config_name = btrack_widget.config.current_choice
     configs.current_config = new_config_name
     new_config = configs[new_config_name]
     new_config = napari_btrack.sync.update_widgets_from_config(
@@ -93,14 +93,14 @@ def run(btrack_widget: Container, configs: TrackerConfigs) -> None:
     and add tracks to the viewer.
     """
 
-    unscaled_config = configs[btrack_widget.config_selector.current_choice]
+    unscaled_config = configs[btrack_widget.config.current_choice]
     unscaled_config = napari_btrack.sync.update_config_from_widgets(
         unscaled_config=unscaled_config,
         container=btrack_widget,
     )
 
     config = unscaled_config.scale_config()
-    segmentation = btrack_widget.segmentation_selector.value
+    segmentation = btrack_widget.segmentation.value
     data, properties, graph = _run_tracker(segmentation, config)
 
     btrack_widget.viewer.add_tracks(
@@ -169,7 +169,7 @@ def save_config_to_json(btrack_widget: Container, configs: TrackerConfigs) -> No
         # user has cancelled
         return
 
-    unscaled_config = configs[btrack_widget.config_selector.current_choice]
+    unscaled_config = configs[btrack_widget.config.current_choice]
     napari_btrack.sync.update_config_from_widgets(
         unscaled_config=unscaled_config,
         container=btrack_widget,
@@ -188,6 +188,6 @@ def load_config_from_json(btrack_widget: Container, configs: TrackerConfigs) -> 
         return
 
     config_name = configs.add_config(filename=load_path, overwrite=False)
-    btrack_widget.config_selector.options["choices"].append(config_name)
-    btrack_widget.config_selector.reset_choices()
-    btrack_widget.config_selector.value = config_name
+    btrack_widget.config.options["choices"].append(config_name)
+    btrack_widget.config.reset_choices()
+    btrack_widget.config.value = config_name
