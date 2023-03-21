@@ -6,8 +6,7 @@ import magicgui
 def _make_label_bold(label: str) -> str:
     """Generate html for a bold label"""
 
-    bold_label = f"<b>{label}</b>"
-    return bold_label
+    return f"<b>{label}</b>"
 
 
 def _create_sigma_widgets():
