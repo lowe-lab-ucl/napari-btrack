@@ -33,6 +33,18 @@ class Sigmas:
     G: float
     R: float
 
+    def __getitem__(self, matrix_name):
+        return self.__dict__[matrix_name]
+
+    def __setitem__(self, matrix_name, sigma):
+        if matrix_name not in self.__dict__.keys():
+            _msg = f"Unknown matrix name '{matrix_name}'"
+            raise ValueError(_msg)
+        self.__dict__[matrix_name] = sigma
+
+    def __iter__(self):
+        yield from self.__dict__.keys()
+
 
 @dataclass
 class UnscaledTrackerConfig:

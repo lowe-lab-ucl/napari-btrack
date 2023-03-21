@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 
     from napari_btrack.config import Sigmas, UnscaledTrackerConfig
 
+import napari_btrack.constants
+
 
 def update_config_from_widgets(
     unscaled_config: UnscaledTrackerConfig,
@@ -20,9 +22,8 @@ def update_config_from_widgets(
     """Update an UnscaledTrackerConfig with the current widget values."""
 
     sigmas: Sigmas = unscaled_config.sigmas
-    sigmas.P = container.P_sigma.value
-    sigmas.G = container.G_sigma.value
-    sigmas.R = container.R_sigma.value
+    for matrix_name in sigmas:
+        sigmas[matrix_name] = container[f"{matrix_name}_sigma"].value
 
     config = unscaled_config.tracker_config
     update_method_name = container.update_method.current_choice
@@ -37,15 +38,7 @@ def update_config_from_widgets(
     hypothesis_model = config.hypothesis_model
     hypotheses = [
         hypothesis
-        for hypothesis in [
-            "P_FP",
-            "P_init",
-            "P_term",
-            "P_link",
-            "P_branch",
-            "P_dead",
-            "P_merge",
-        ]
+        for hypothesis in napari_btrack.constants.HYPOTHESES
         if container[hypothesis].value
     ]
     hypothesis_model.hypotheses = hypotheses
@@ -90,15 +83,7 @@ def update_widgets_from_config(
     container.max_lost.value = motion_model.max_lost
 
     hypothesis_model = config.hypothesis_model
-    for hypothesis in [
-        "P_FP",
-        "P_init",
-        "P_term",
-        "P_link",
-        "P_branch",
-        "P_dead",
-        "P_merge",
-    ]:
+    for hypothesis in napari_btrack.constants.HYPOTHESES:
         is_checked = hypothesis in hypothesis_model.hypotheses
         container[hypothesis].value = is_checked
 
