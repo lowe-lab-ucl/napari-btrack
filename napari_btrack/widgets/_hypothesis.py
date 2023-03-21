@@ -87,7 +87,7 @@ def _create_threshold_widgets() -> list[Widget]:
     """Create widgets for setting thresholds for the HypothesisModel"""
 
     tooltip = (
-        "A threshold distance from the edge of the FOV to add an "
+        "A threshold distance from the edge of the field of view to add an "
         "initialization or termination hypothesis."
     )
     distance_threshold = magicgui.widgets.create_widget(
