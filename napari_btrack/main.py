@@ -51,6 +51,12 @@ def create_btrack_widget() -> Container:
     btrack_widget = magicgui.widgets.Container(widgets=widgets, scrollable=True)
     btrack_widget.viewer = napari.current_viewer()
 
+    # Set the cell_config defaults in the gui
+    napari_btrack.sync.update_widgets_from_config(
+        unscaled_config=all_configs["cell"],
+        container=btrack_widget,
+    )
+
     # Now set the callbacks
     btrack_widget.config.changed.connect(
         lambda selected: select_config(btrack_widget, all_configs, selected),
@@ -96,7 +102,6 @@ def select_config(
     )
 
     # now load the newly-selected config and set widget values
-    # new_config_name = btrack_widget.config.current_choice
     configs.current_config = new_config_name
     new_config = configs[new_config_name]
     new_config = napari_btrack.sync.update_widgets_from_config(
