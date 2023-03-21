@@ -39,13 +39,11 @@ def _create_sigma_widgets():
         options={"tooltip": tooltip},
     )
 
-    sigma_widgets = [
+    return [
         P_sigma,
         G_sigma,
         R_sigma,
     ]
-
-    return sigma_widgets
 
 
 def create_motion_model_widgets():
