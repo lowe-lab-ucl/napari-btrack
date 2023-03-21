@@ -25,7 +25,9 @@ def update_config_from_widgets(
     sigmas.R = container.R_sigma.value
 
     config = unscaled_config.tracker_config
-    config.update_method = container.update_method._widget._qwidget.currentIndex()
+    update_method_name = container.update_method.current_choice
+    update_method_index = container.update_method.choices.index(update_method_name)
+    config.update_method = update_method_index
     config.max_search_radius = container.max_search_radius.value
 
     motion_model = config.motion_model
