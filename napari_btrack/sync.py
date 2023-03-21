@@ -34,18 +34,19 @@ def update_config_from_widgets(
     motion_model.max_lost = container.max_lost.value
 
     hypothesis_model = config.hypothesis_model
-    hypotheses = []
-    for hypothesis in [
-        "P_FP",
-        "P_init",
-        "P_term",
-        "P_link",
-        "P_branch",
-        "P_dead",
-        "P_merge",
-    ]:
-        if container[hypothesis].value:
-            hypotheses.append(hypothesis)
+    hypotheses = [
+        hypothesis
+        for hypothesis in [
+            "P_FP",
+            "P_init",
+            "P_term",
+            "P_link",
+            "P_branch",
+            "P_dead",
+            "P_merge",
+        ]
+        if container[hypothesis].value
+    ]
     hypothesis_model.hypotheses = hypotheses
 
     hypothesis_model.lambda_time = container.lambda_time.value
