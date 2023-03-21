@@ -21,20 +21,24 @@ def update_config_from_widgets(
 ) -> TrackerConfig:
     """Update an UnscaledTrackerConfig with the current widget values."""
 
+    # Update MotionModel matrix scaling factors
     sigmas: Sigmas = unscaled_config.sigmas
     for matrix_name in sigmas:
         sigmas[matrix_name] = container[f"{matrix_name}_sigma"].value
 
+    # Update TrackerConfig values
     config = unscaled_config.tracker_config
     update_method_name = container.update_method.current_choice
     update_method_index = container.update_method.choices.index(update_method_name)
     config.update_method = update_method_index
     config.max_search_radius = container.max_search_radius.value
 
+    # Update MotionModel values
     motion_model = config.motion_model
     motion_model.accuracy = container.accuracy.value
     motion_model.max_lost = container.max_lost.value
 
+    # Update HypothesisModel.hypotheses values
     hypothesis_model = config.hypothesis_model
     hypotheses = [
         hypothesis
@@ -43,17 +47,13 @@ def update_config_from_widgets(
     ]
     hypothesis_model.hypotheses = hypotheses
 
-    hypothesis_model.lambda_time = container.lambda_time.value
-    hypothesis_model.lambda_dist = container.lambda_dist.value
-    hypothesis_model.lambda_link = container.lambda_link.value
-    hypothesis_model.lambda_branch = container.lambda_branch.value
+    # Update HypothesisModel scaling factors
+    for scaling_factor in napari_btrack.constants.HYPOTHESIS_SCALING_FACTORS:
+        setattr(hypothesis_model, scaling_factor, container[scaling_factor].value)
 
-    hypothesis_model.theta_dist = container.theta_dist.value
-    hypothesis_model.theta_time = container.theta_time.value
-    hypothesis_model.dist_thresh = container.dist_thresh.value
-    hypothesis_model.time_thresh = container.time_thresh.value
-    hypothesis_model.apop_thresh = container.apop_thresh.value
-    hypothesis_model.relax = container.relax.value
+    # Update HypothesisModel thresholds
+    for threshold in napari_btrack.constants.HYPOTHESIS_THRESHOLDS:
+        setattr(hypothesis_model, threshold, container[threshold].value)
 
     hypothesis_model.segmentation_miss_rate = container.segmentation_miss_rate.value
 
@@ -69,34 +69,34 @@ def update_widgets_from_config(
     UnscaledTrackerConfig.
     """
 
+    # Update widgets from MotionModel matrix scaling factors
     sigmas: Sigmas = unscaled_config.sigmas
     for matrix_name in sigmas:
         container[f"{matrix_name}_sigma"].value = sigmas[matrix_name]
 
+    # Update widgets from TrackerConfig values
     config = unscaled_config.tracker_config
     container.update_method.value = config.update_method.name
     container.max_search_radius.value = config.max_search_radius
 
+    # Update widgets from MotionModel values
     motion_model = config.motion_model
     container.accuracy.value = motion_model.accuracy
     container.max_lost.value = motion_model.max_lost
 
+    # Update widgets from HypothesisModel.hypotheses values
     hypothesis_model = config.hypothesis_model
     for hypothesis in napari_btrack.constants.HYPOTHESES:
         is_checked = hypothesis in hypothesis_model.hypotheses
         container[hypothesis].value = is_checked
 
-    container.lambda_time.value = hypothesis_model.lambda_time
-    container.lambda_dist.value = hypothesis_model.lambda_dist
-    container.lambda_link.value = hypothesis_model.lambda_link
-    container.lambda_branch.value = hypothesis_model.lambda_branch
+    # Update widgets from HypothesisModel scaling factors
+    for scaling_factor in napari_btrack.constants.HYPOTHESIS_SCALING_FACTORS:
+        container[scaling_factor].value = getattr(hypothesis_model, scaling_factor)
 
-    container.theta_dist.value = hypothesis_model.theta_dist
-    container.theta_time.value = hypothesis_model.theta_time
-    container.dist_thresh.value = hypothesis_model.dist_thresh
-    container.time_thresh.value = hypothesis_model.time_thresh
-    container.apop_thresh.value = hypothesis_model.apop_thresh
-    container.relax.value = hypothesis_model.relax
+    # Update widgets from HypothesisModel thresholds
+    for threshold in napari_btrack.constants.HYPOTHESIS_THRESHOLDS:
+        container[threshold].value = getattr(hypothesis_model, threshold)
 
     container.segmentation_miss_rate.value = hypothesis_model.segmentation_miss_rate
 

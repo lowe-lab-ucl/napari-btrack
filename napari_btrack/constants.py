@@ -12,3 +12,19 @@ HYPOTHESES = [
     "P_dead",
     "P_merge",
 ]
+
+HYPOTHESIS_SCALING_FACTORS = [
+    "lambda_time",
+    "lambda_dist",
+    "lambda_link",
+    "lambda_branch",
+]
+
+HYPOTHESIS_THRESHOLDS = [
+    "theta_dist",
+    "theta_time",
+    "dist_thresh",
+    "time_thresh",
+    "apop_thresh",
+    "relax",
+]
