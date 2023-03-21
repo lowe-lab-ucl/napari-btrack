@@ -99,7 +99,7 @@ def create_control_widgets() -> list[Widget]:
     tooltips = [
         "Load a TrackerConfig json file.",
         "Export the current configuration to a TrackerConfig json file.",
-        "Reset the current configuration to the defaults of the base config.",
+        "Reset the current configuration to the defaults stored in the corresponding json file.",  # noqa: E501
         "Run the tracking analysis with the current configuration.",
     ]
 
