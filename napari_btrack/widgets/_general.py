@@ -23,7 +23,7 @@ def create_input_widgets():
     config_selector = magicgui.widgets.create_widget(
         value="cell",
         name="config_selector",
-        label="base config",
+        label="config name",
         widget_type="ComboBox",
         options={
             "choices": ["cell", "particle"],
