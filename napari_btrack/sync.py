@@ -70,9 +70,8 @@ def update_widgets_from_config(
     """
 
     sigmas: Sigmas = unscaled_config.sigmas
-    container.P_sigma.value = sigmas.P
-    container.G_sigma.value = sigmas.G
-    container.R_sigma.value = sigmas.R
+    for matrix_name in sigmas:
+        container[f"{matrix_name}_sigma"].value = sigmas[matrix_name]
 
     config = unscaled_config.tracker_config
     container.update_method.value = config.update_method.name
