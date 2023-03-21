@@ -94,7 +94,7 @@ def test_load_config(track_widget):
         load_path_dialogue_box.return_value = cell_config()
         track_widget.load_config_button.clicked()
 
-    # We didn't override the name, so it should be ''Default
+    # We didn't override the name, so it should be 'Default'
     new_config_name = track_widget.config_selector.current_choice
 
     assert track_widget.config_selector.value == "Default"
