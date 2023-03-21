@@ -119,7 +119,7 @@ class TrackerConfigs:
         """Load a TrackerConfig and add it to the store."""
 
         config = UnscaledTrackerConfig(filename)
-        config_name = name if name is not None else config.tracker_config.name
+        config_name = config.tracker_config.name if name is None else name
         config.tracker_config.name = config_name
 
         # TODO: Make the combobox editable so config names can be changed within the GUI
