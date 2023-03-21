@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
     from napari_btrack.config import TrackerConfigs
 
+import logging
+
 import btrack
 import magicgui.widgets
 import napari
@@ -22,6 +24,22 @@ import napari_btrack.widgets
 __all__ = [
     "create_btrack_widget",
 ]
+
+# get the logger instance
+logger = logging.getLogger(__name__)
+
+# if we don't have any handlers, set one up
+if not logger.handlers:
+    # configure stream handler
+    log_fmt = logging.Formatter(
+        "[%(levelname)s][%(asctime)s] %(message)s",
+        datefmt="%Y/%m/%d %I:%M:%S %p",
+    )
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(log_fmt)
+
+    logger.addHandler(console_handler)
+    logger.setLevel(logging.DEBUG)
 
 
 def create_btrack_widget() -> Container:
@@ -166,7 +184,10 @@ def save_config_to_json(btrack_widget: Container, configs: TrackerConfigs) -> No
 
     save_path = napari_btrack.widgets.save_path_dialogue_box()
     if save_path is None:
-        # user has cancelled
+        _msg = (
+            "napari-btrack: Configuration not saved - operation cancelled by the user."
+        )
+        logger.info(_msg)
         return
 
     unscaled_config = configs[btrack_widget.config.current_choice]
@@ -184,7 +205,8 @@ def load_config_from_json(btrack_widget: Container, configs: TrackerConfigs) -> 
 
     load_path = napari_btrack.widgets.load_path_dialogue_box()
     if load_path is None:
-        # user has cancelled
+        _msg = "napari-btrack: No file loaded - operation cancelled by the user."
+        logger.info(_msg)
         return
 
     config_name = configs.add_config(filename=load_path, overwrite=False)

@@ -3,4 +3,11 @@ try:
 except ImportError:
     __version__ = "unknown"
 
+import logging
+
 from napari_btrack import constants, main
+
+__all__ = [
+    "constants",
+    "main",
+]
