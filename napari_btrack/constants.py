@@ -1,5 +1,5 @@
 """
-This modules constains variables that are used throughout the
+This module contains variables that are used throughout the
 napari_btrack package.
 """
 
