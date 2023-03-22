@@ -40,12 +40,11 @@ def update_config_from_widgets(
 
     # Update HypothesisModel.hypotheses values
     hypothesis_model = config.hypothesis_model
-    hypotheses = [
+    hypothesis_model.hypotheses = [
         hypothesis
         for hypothesis in napari_btrack.constants.HYPOTHESES
         if container[hypothesis].value
     ]
-    hypothesis_model.hypotheses = hypotheses
 
     # Update HypothesisModel scaling factors
     for scaling_factor in napari_btrack.constants.HYPOTHESIS_SCALING_FACTORS:
